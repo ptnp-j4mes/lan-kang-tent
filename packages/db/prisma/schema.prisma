@@ -1,0 +1,318 @@
+// CampThai Map — Prisma schema
+// ลานกางเต็นท์ค้นหา/รีวิว platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum UserRole {
+  member
+  owner
+  admin
+}
+
+enum UserStatus {
+  active
+  suspended
+  banned
+}
+
+enum CampsiteStatus {
+  draft
+  published
+  hidden
+}
+
+enum LocationAccuracy {
+  unverified
+  google_verified
+  owner_confirmed
+  admin_verified
+}
+
+enum PhotoSource {
+  admin
+  owner
+  member
+  google
+}
+
+enum ReviewStatus {
+  pending
+  approved
+  rejected
+}
+
+enum TripType {
+  solo
+  couple
+  family
+  friends
+}
+
+enum ClaimStatus {
+  pending
+  approved
+  rejected
+}
+
+enum ReportTargetType {
+  campsite
+  review
+}
+
+enum ReportStatus {
+  open
+  resolved
+  dismissed
+}
+
+enum SyncStatus {
+  success
+  failed
+}
+
+// ---------- Models ----------
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  passwordHash String?    @map("password_hash")
+  avatarUrl    String?    @map("avatar_url")
+  role         UserRole   @default(member)
+  status       UserStatus @default(active)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  ownedCampsites Campsite[]        @relation("CampsiteOwner")
+  createdCampsites Campsite[]      @relation("CampsiteCreator")
+  reviews        Review[]
+  favorites      FavoriteCampsite[]
+  ownerClaims    OwnerClaim[]
+  reports        Report[]
+  reviewedClaims OwnerClaim[]      @relation("ClaimReviewer")
+
+  @@map("users")
+}
+
+model Campsite {
+  id                     String           @id @default(cuid())
+  name                   String
+  slug                   String           @unique
+  description            String?
+  province               String
+  district               String?
+  subdistrict            String?
+  address                String?
+  latitude               Float?
+  longitude              Float?
+  priceMin               Int?             @map("price_min")
+  priceMax               Int?             @map("price_max")
+  phone                  String?
+  websiteUrl             String?          @map("website_url")
+  facebookUrl            String?          @map("facebook_url")
+  lineId                 String?          @map("line_id")
+  googlePlaceId          String?          @unique @map("google_place_id")
+  googleRating           Float?           @map("google_rating")
+  googleUserRatingCount  Int?             @map("google_user_rating_count")
+  memberRating           Float?           @map("member_rating")
+  memberReviewCount      Int              @default(0) @map("member_review_count")
+  status                 CampsiteStatus   @default(draft)
+  ownerUserId            String?          @map("owner_user_id")
+  locationAccuracyStatus LocationAccuracy @default(unverified) @map("location_accuracy_status")
+  isVerified             Boolean          @default(false) @map("is_verified")
+  region                 String?          // north, northeast, central, east, west, south
+  createdBy              String?          @map("created_by")
+  createdAt              DateTime         @default(now()) @map("created_at")
+  updatedAt              DateTime         @updatedAt @map("updated_at")
+
+  owner   User? @relation("CampsiteOwner", fields: [ownerUserId], references: [id])
+  creator User? @relation("CampsiteCreator", fields: [createdBy], references: [id])
+
+  photos          CampsitePhoto[]
+  amenities       CampsiteAmenity[]
+  reviews         Review[]
+  googleSnapshots GoogleReviewSnapshot[]
+  favorites       FavoriteCampsite[]
+  ownerClaims     OwnerClaim[]
+  syncLogs        GoogleSyncLog[]
+
+  @@index([province])
+  @@index([region])
+  @@index([status])
+  @@index([latitude, longitude])
+  @@map("campsites")
+}
+
+model CampsitePhoto {
+  id         String      @id @default(cuid())
+  campsiteId String      @map("campsite_id")
+  imageUrl   String      @map("image_url")
+  caption    String?
+  sortOrder  Int         @default(0) @map("sort_order")
+  source     PhotoSource @default(admin)
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  campsite Campsite @relation(fields: [campsiteId], references: [id], onDelete: Cascade)
+
+  @@index([campsiteId])
+  @@map("campsite_photos")
+}
+
+model Amenity {
+  id   String @id @default(cuid())
+  key  String @unique
+  name String
+  icon String?
+
+  campsites CampsiteAmenity[]
+
+  @@map("amenities")
+}
+
+model CampsiteAmenity {
+  id         String @id @default(cuid())
+  campsiteId String @map("campsite_id")
+  amenityId  String @map("amenity_id")
+
+  campsite Campsite @relation(fields: [campsiteId], references: [id], onDelete: Cascade)
+  amenity  Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@unique([campsiteId, amenityId])
+  @@index([amenityId])
+  @@map("campsite_amenities")
+}
+
+model Review {
+  id                  String       @id @default(cuid())
+  campsiteId          String       @map("campsite_id")
+  userId              String       @map("user_id")
+  ratingOverall       Int          @map("rating_overall")
+  ratingCleanliness   Int?         @map("rating_cleanliness")
+  ratingFacility      Int?         @map("rating_facility")
+  ratingView          Int?         @map("rating_view")
+  ratingAccessibility Int?         @map("rating_accessibility")
+  ratingSafety        Int?         @map("rating_safety")
+  ratingValue         Int?         @map("rating_value")
+  tripType            TripType?    @map("trip_type")
+  visitDate           DateTime?    @map("visit_date")
+  comment             String?
+  ownerReply          String?      @map("owner_reply")
+  ownerReplyAt        DateTime?    @map("owner_reply_at")
+  status              ReviewStatus @default(pending)
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+
+  campsite Campsite      @relation(fields: [campsiteId], references: [id], onDelete: Cascade)
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos   ReviewPhoto[]
+
+  @@index([campsiteId])
+  @@index([userId])
+  @@index([status])
+  @@map("reviews")
+}
+
+model ReviewPhoto {
+  id        String   @id @default(cuid())
+  reviewId  String   @map("review_id")
+  imageUrl  String   @map("image_url")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+  @@map("review_photos")
+}
+
+model GoogleReviewSnapshot {
+  id                      String   @id @default(cuid())
+  campsiteId              String   @map("campsite_id")
+  googleReviewId          String   @map("google_review_id")
+  authorName              String?  @map("author_name")
+  authorPhotoUrl          String?  @map("author_photo_url")
+  authorUrl               String?  @map("author_url")
+  rating                  Int?
+  text                    String?
+  relativeTimeDescription String?  @map("relative_time_description")
+  publishTime             DateTime? @map("publish_time")
+  fetchedAt               DateTime @default(now()) @map("fetched_at")
+
+  campsite Campsite @relation(fields: [campsiteId], references: [id], onDelete: Cascade)
+
+  @@unique([campsiteId, googleReviewId])
+  @@index([campsiteId])
+  @@map("google_review_snapshots")
+}
+
+model FavoriteCampsite {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  campsiteId String   @map("campsite_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campsite Campsite @relation(fields: [campsiteId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, campsiteId])
+  @@index([userId])
+  @@map("favorite_campsites")
+}
+
+model OwnerClaim {
+  id              String      @id @default(cuid())
+  campsiteId      String      @map("campsite_id")
+  userId          String      @map("user_id")
+  evidenceText    String?     @map("evidence_text")
+  evidenceFileUrl String?     @map("evidence_file_url")
+  status          ClaimStatus @default(pending)
+  reviewedBy      String?     @map("reviewed_by")
+  reviewedAt      DateTime?   @map("reviewed_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  campsite Campsite @relation(fields: [campsiteId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User?    @relation("ClaimReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([campsiteId])
+  @@index([userId])
+  @@index([status])
+  @@map("owner_claims")
+}
+
+model Report {
+  id             String           @id @default(cuid())
+  reporterUserId String?          @map("reporter_user_id")
+  targetType     ReportTargetType @map("target_type")
+  targetId       String           @map("target_id")
+  reason         String
+  status         ReportStatus     @default(open)
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  reporter User? @relation(fields: [reporterUserId], references: [id])
+
+  @@index([targetType, targetId])
+  @@index([status])
+  @@map("reports")
+}
+
+model GoogleSyncLog {
+  id         String     @id @default(cuid())
+  campsiteId String     @map("campsite_id")
+  status     SyncStatus
+  message    String?
+  syncedAt   DateTime   @default(now()) @map("synced_at")
+
+  campsite Campsite @relation(fields: [campsiteId], references: [id], onDelete: Cascade)
+
+  @@index([campsiteId])
+  @@map("google_sync_logs")
+}

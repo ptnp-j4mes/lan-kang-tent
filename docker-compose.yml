@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: ckt-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: campthai
+      POSTGRES_PASSWORD: campthai
+      POSTGRES_DB: campthai
+    ports:
+      - "5432:5432"
+    volumes:
+      - ckt-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U campthai"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: ckt-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+volumes:
+  ckt-pgdata:
