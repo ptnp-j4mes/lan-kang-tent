@@ -20,10 +20,16 @@ import {
 
 const PORT = Number(process.env.API_PORT ?? 4000);
 
+// WEB_ORIGIN may be a comma-separated list (public web + webmange backoffice).
+// Unset = allow any origin (dev).
+const corsOrigin = process.env.WEB_ORIGIN
+  ? process.env.WEB_ORIGIN.split(",").map((o) => o.trim())
+  : true;
+
 const app = new Elysia()
   .use(
     cors({
-      origin: process.env.WEB_ORIGIN ?? true,
+      origin: corsOrigin,
       credentials: true,
     }),
   )
