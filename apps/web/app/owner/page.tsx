@@ -7,11 +7,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  CalendarDays, Inbox, Loader2, LogOut, MapPin, Save, Tent, Trash2,
+  CalendarDays, Inbox, Loader2, LogOut, MapPin, Tent, Trash2,
 } from "lucide-react";
 import { api, clearToken, useMe } from "@/lib/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { CampSections } from "@/components/detail/owner-manage";
 
 const inputCls =
   "w-full rounded-xl border border-input bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ember";
@@ -78,62 +79,24 @@ export default function OwnerConsolePage() {
 // ---------- ลานของฉัน ----------
 function CampsTab() {
   const [camps, setCamps] = useState<any[] | null>(null);
-  useEffect(() => { api<any[]>("/api/owner/campsites").then(setCamps).catch(() => setCamps([])); }, []);
+  function load() { api<any[]>("/api/owner/campsites").then(setCamps).catch(() => setCamps([])); }
+  useEffect(load, []);
   if (!camps) return <Spin />;
   if (!camps.length) return <Empty>ยังไม่มีลานที่คุณดูแล — <Link href="/owners" className="text-ember underline">claim ลานของคุณ</Link></Empty>;
-  return <div className="space-y-5">{camps.map((c) => <CampCard key={c.id} camp={c} />)}</div>;
-}
-
-function CampCard({ camp }: { camp: any }) {
-  const [f, setF] = useState({
-    priceMin: camp.priceMin ?? "", priceMax: camp.priceMax ?? "",
-    phone: camp.phone ?? "", lineId: camp.lineId ?? "",
-    facebookUrl: camp.facebookUrl ?? "", websiteUrl: camp.websiteUrl ?? "",
-    description: camp.description ?? "",
-  });
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-  const set = (k: keyof typeof f) => (e: any) => setF({ ...f, [k]: e.target.value });
-
-  async function save() {
-    setBusy(true); setMsg(null);
-    try {
-      await api(`/api/owner/campsites/${camp.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          priceMin: f.priceMin === "" ? undefined : Number(f.priceMin),
-          priceMax: f.priceMax === "" ? undefined : Number(f.priceMax),
-          phone: f.phone, lineId: f.lineId, facebookUrl: f.facebookUrl,
-          websiteUrl: f.websiteUrl, description: f.description,
-        }),
-      });
-      setMsg("บันทึกแล้ว");
-    } catch (e: any) { setMsg(e.message ?? "บันทึกไม่สำเร็จ"); }
-    finally { setBusy(false); }
-  }
-
   return (
-    <div className="rounded-2xl border bg-card p-5 shadow-field">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <Link href={`/campsites/${camp.slug}`} className="font-display text-lg text-primary hover:text-ember">{camp.name}</Link>
-          <p className="flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="size-3" /> {camp.province}{camp.district ? ` · ${camp.district}` : ""}</p>
+    <div className="space-y-8">
+      {camps.map((c) => (
+        <div key={c.id}>
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <Link href={`/campsites/${c.slug}`} className="font-display text-lg text-primary hover:text-ember">{c.name}</Link>
+              <p className="flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="size-3" /> {c.province}{c.district ? ` · ${c.district}` : ""}</p>
+            </div>
+            {c.isVerified && <span className="rounded-full bg-[hsl(142_55%_42%/0.16)] px-2 py-0.5 text-[11px] font-medium text-[hsl(142_45%_30%)]">ยืนยันแล้ว</span>}
+          </div>
+          <CampSections camp={c} onSaved={load} />
         </div>
-        {camp.isVerified && <span className="rounded-full bg-[hsl(142_55%_42%/0.16)] px-2 py-0.5 text-[11px] font-medium text-[hsl(142_45%_30%)]">ยืนยันแล้ว</span>}
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block space-y-1"><span className="text-xs font-semibold text-muted-foreground">ราคาต่ำสุด (บาท)</span><input type="number" className={inputCls} value={f.priceMin} onChange={set("priceMin")} /></label>
-        <label className="block space-y-1"><span className="text-xs font-semibold text-muted-foreground">ราคาสูงสุด (บาท)</span><input type="number" className={inputCls} value={f.priceMax} onChange={set("priceMax")} /></label>
-        <label className="block space-y-1"><span className="text-xs font-semibold text-muted-foreground">เบอร์โทร</span><input className={inputCls} value={f.phone} onChange={set("phone")} /></label>
-        <label className="block space-y-1"><span className="text-xs font-semibold text-muted-foreground">LINE ID</span><input className={inputCls} value={f.lineId} onChange={set("lineId")} /></label>
-        <label className="block space-y-1"><span className="text-xs font-semibold text-muted-foreground">Facebook URL</span><input className={inputCls} value={f.facebookUrl} onChange={set("facebookUrl")} /></label>
-        <label className="block space-y-1"><span className="text-xs font-semibold text-muted-foreground">เว็บไซต์</span><input className={inputCls} value={f.websiteUrl} onChange={set("websiteUrl")} /></label>
-        <label className="block space-y-1 sm:col-span-2"><span className="text-xs font-semibold text-muted-foreground">รายละเอียดลาน</span><textarea rows={3} className={inputCls} value={f.description} onChange={set("description")} /></label>
-      </div>
-      <div className="mt-4 flex items-center gap-3">
-        <Button variant="ember" size="sm" onClick={save} disabled={busy}><Save className="size-4" /> {busy ? "กำลังบันทึก…" : "บันทึก"}</Button>
-        {msg && <span className="text-sm text-muted-foreground">{msg}</span>}
-      </div>
+      ))}
     </div>
   );
 }

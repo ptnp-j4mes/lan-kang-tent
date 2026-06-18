@@ -58,14 +58,24 @@ function Drawer({ camp, onClose, onSaved }: { camp: any; onClose: () => void; on
           <h2 className="font-display text-lg text-primary">จัดการ: {camp.name}</h2>
           <button onClick={onClose} className="rounded-lg p-2 hover:bg-accent"><X className="size-5" /></button>
         </div>
-        <div className="space-y-6 p-5">
-          <BasicSection camp={camp} onSaved={onSaved} />
-          <AmenitySection camp={camp} onSaved={onSaved} />
-          <PhotoSection camp={camp} onSaved={onSaved} />
-          <LocationSection camp={camp} onSaved={onSaved} />
-          <CalendarSection camp={camp} />
-        </div>
+        <div className="p-5"><CampSections camp={camp} onSaved={onSaved} /></div>
       </div>
+    </div>
+  );
+}
+
+// All editable sections for one camp — reused by the detail-page drawer and the
+// /owner console. `camp` is the owner-scoped shape from /api/owner/campsites
+// (includes photos + amenities).
+export function CampSections({ camp, onSaved }: { camp: any; onSaved?: () => void }) {
+  const saved = onSaved ?? (() => {});
+  return (
+    <div className="space-y-6">
+      <BasicSection camp={camp} onSaved={saved} />
+      <AmenitySection camp={camp} onSaved={saved} />
+      <PhotoSection camp={camp} onSaved={saved} />
+      <LocationSection camp={camp} onSaved={saved} />
+      <CalendarSection camp={camp} />
     </div>
   );
 }
