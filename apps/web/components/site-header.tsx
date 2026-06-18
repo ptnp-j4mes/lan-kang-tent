@@ -6,23 +6,30 @@ import { Map, Menu, Tent, User, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Logo } from "./logo";
 import { cn } from "@/lib/utils";
+import { useMe, homeForRole } from "@/lib/client";
+import { CategoryMenu } from "./category-menu";
 
 const NAV = [
   { href: "/map", label: "แผนที่ลานกางเต็นท์" },
   { href: "/campsites", label: "ลานทั้งหมด" },
-  { href: "/province", label: "ตามจังหวัด" },
   { href: "/reviews", label: "รีวิวนักแคมป์" },
+  { href: "/articles", label: "บทความ" },
   { href: "/owners", label: "สำหรับเจ้าของลาน" },
+  { href: "/favorites", label: "ลานโปรด" },
 ];
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const me = useMe();
+  const accountHref = me ? homeForRole(me.role) : "/login";
+  const accountLabel = me ? (me.role === "owner" || me.role === "camp_staff" ? "จัดการลาน" : "บัญชี") : "เข้าสู่ระบบ";
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between gap-4">
         <Logo />
 
         <nav className="hidden items-center gap-1 lg:flex">
+          <CategoryMenu />
           {NAV.map((n) => (
             <Link
               key={n.href}
@@ -41,8 +48,8 @@ export function SiteHeader() {
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
-            <Link href="/login">
-              <User className="size-4" /> เข้าสู่ระบบ
+            <Link href={accountHref}>
+              <User className="size-4" /> {accountLabel}
             </Link>
           </Button>
           <button
@@ -80,7 +87,7 @@ export function SiteHeader() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="flex-1">
-              <Link href="/login">เข้าสู่ระบบ</Link>
+              <Link href={accountHref}>{accountLabel}</Link>
             </Button>
           </div>
         </nav>

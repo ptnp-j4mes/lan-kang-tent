@@ -42,6 +42,12 @@ export const memberRoutes = new Elysia()
           status: "pending", // moderation queue
         },
       });
+      // notify camp owner of new review
+      const camp = await prisma.campsite.findUnique({ where: { id: body.campsiteId }, select: { name: true, ownerUserId: true } });
+      if (camp?.ownerUserId)
+        await prisma.notification.create({
+          data: { userId: camp.ownerUserId, type: "new_review", title: `มีรีวิวใหม่ที่ ${camp.name}`, targetType: "review", targetId: review.id },
+        });
       return status(201, review);
     },
     {
@@ -108,6 +114,11 @@ export const memberRoutes = new Elysia()
           reason: body.reason,
         },
       });
+      const camp = await prisma.campsite.findUnique({ where: { id: params.id }, select: { name: true, ownerUserId: true } });
+      if (camp?.ownerUserId)
+        await prisma.notification.create({
+          data: { userId: camp.ownerUserId, type: "info_report", title: `มีการแจ้งข้อมูลผิดพลาดที่ ${camp.name}`, targetType: "campsite", targetId: params.id },
+        });
       return status(201, { ok: true });
     },
     { body: t.Object({ reason: t.String({ minLength: 3, maxLength: 1000 }) }) },

@@ -1,11 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 import Link from "next/link";
-import { Map, Search, Tent } from "lucide-react";
+import { Map, Tent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AmenityIcon } from "@/components/amenity-icon";
+import { SearchBox } from "@/components/search-box";
+import type { Banner } from "@/lib/api";
+
+const DEFAULTS = {
+  imageUrl: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=1600&q=80",
+  title: "กางเต็นท์ที่ไหนดี? เปิดแผนที่ แล้วออกเดินทาง",
+  subtitle: "ค้นหาลานกางเต็นท์จากทุกภาคของไทย กรองตามวิว ราคา สิ่งอำนวยความสะดวก อ่านรีวิวจริงจากนักแคมป์",
+  ctaLabel: "เปิดแผนที่ลานกางเต็นท์",
+};
 
 const QUICK = [
   { label: "ใกล้กรุงเทพ", q: "region=west", icon: "car_access" },
@@ -18,20 +25,20 @@ const QUICK = [
   { label: "มีห้องน้ำ", q: "amenities=toilet", icon: "toilet" },
 ];
 
-export function Hero() {
-  const router = useRouter();
-  const [q, setQ] = useState("");
+export function Hero({ banner }: { banner?: Banner | null }) {
+  const b = {
+    imageUrl: banner?.imageUrl || DEFAULTS.imageUrl,
+    title: banner?.title || DEFAULTS.title,
+    subtitle: banner?.subtitle || DEFAULTS.subtitle,
+    ctaLabel: banner?.ctaLabel || DEFAULTS.ctaLabel,
+  };
 
   return (
     <section className="grain relative overflow-hidden">
       {/* background image */}
       <div className="absolute inset-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=1600&q=80"
-          alt=""
-          className="size-full object-cover"
-        />
+        <img src={b.imageUrl} alt="" className="size-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-primary/85 via-primary/55 to-background" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,hsl(var(--ember)/0.25),transparent_45%)]" />
       </div>
@@ -46,40 +53,23 @@ export function Hero() {
             className="mt-5 font-display text-4xl leading-[1.1] text-primary-foreground animate-fade-up sm:text-6xl"
             style={{ animationDelay: "60ms" }}
           >
-            กางเต็นท์ที่ไหนดี?
-            <span className="block text-ember">เปิดแผนที่ แล้วออกเดินทาง</span>
+            {b.title}
           </h1>
 
           <p
             className="mt-5 max-w-xl text-base text-primary-foreground/85 animate-fade-up sm:text-lg"
             style={{ animationDelay: "120ms" }}
           >
-            ค้นหาลานกางเต็นท์จากทุกภาคของไทย กรองตามวิว ราคา สิ่งอำนวยความสะดวก
-            อ่านรีวิวจริงจากนักแคมป์ แล้วบันทึกที่หมายต่อไปของคุณ
+            {b.subtitle}
           </p>
 
           {/* search */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              router.push(`/map?keyword=${encodeURIComponent(q)}`);
-            }}
-            className="mt-7 flex flex-col gap-2 animate-fade-up sm:flex-row"
-            style={{ animationDelay: "180ms" }}
-          >
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="ค้นหาลานกางเต็นท์ จังหวัด หรือชื่อสถานที่"
-                className="h-14 w-full rounded-full border border-white/20 bg-card/95 pl-12 pr-4 text-base shadow-lift outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ember"
-              />
-            </div>
-            <Button type="submit" variant="ember" size="lg" className="h-14 px-8">
-              <Map className="size-5" /> เปิดแผนที่ลานกางเต็นท์
+          <div className="mt-7 max-w-2xl animate-fade-up" style={{ animationDelay: "180ms" }}>
+            <SearchBox />
+            <Button asChild variant="ember" size="lg" className="mt-3 h-12">
+              <Link href="/map"><Map className="size-5" /> {b.ctaLabel}</Link>
             </Button>
-          </form>
+          </div>
 
           {/* quick filters */}
           <div

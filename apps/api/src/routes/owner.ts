@@ -1,11 +1,12 @@
 import { Elysia, t } from "elysia";
 import { prisma } from "@ckt/db";
-import { authPlugin, requireRole } from "../lib/auth";
+import { authPlugin } from "../lib/auth";
+import { requireRole, requireCampAccess } from "../lib/rbac";
 
 export const ownerRoutes = new Elysia({ prefix: "/api/owner" })
   .use(authPlugin)
   .onBeforeHandle(({ user }) => {
-    requireRole(user, "owner", "admin");
+    requireRole(user, "owner", "camp_staff", "admin");
   })
   .get("/campsites", async ({ user }) =>
     prisma.campsite.findMany({
@@ -15,11 +16,9 @@ export const ownerRoutes = new Elysia({ prefix: "/api/owner" })
   )
   .patch(
     "/campsites/:id",
-    async ({ user, params, body, status }) => {
-      // owner may only edit own campsite, and only safe fields
-      const c = await prisma.campsite.findUnique({ where: { id: params.id } });
-      if (!c || (c.ownerUserId !== user!.id && user!.role !== "admin"))
-        return status(403, { message: "Forbidden" });
+    async ({ user, params, body }) => {
+      // owner/staff/admin only; safe fields only
+      await requireCampAccess(user, params.id);
       return prisma.campsite.update({
         where: { id: params.id },
         data: {
@@ -47,10 +46,8 @@ export const ownerRoutes = new Elysia({ prefix: "/api/owner" })
   )
   .post(
     "/campsites/:id/photos",
-    async ({ user, params, body, status }) => {
-      const c = await prisma.campsite.findUnique({ where: { id: params.id } });
-      if (!c || (c.ownerUserId !== user!.id && user!.role !== "admin"))
-        return status(403, { message: "Forbidden" });
+    async ({ user, params, body }) => {
+      await requireCampAccess(user, params.id);
       return prisma.campsitePhoto.create({
         data: { campsiteId: params.id, imageUrl: body.imageUrl, caption: body.caption, source: "owner" },
       });
@@ -62,8 +59,8 @@ export const ownerRoutes = new Elysia({ prefix: "/api/owner" })
       where: { id: params.id },
       include: { campsite: true },
     });
-    if (!photo || (photo.campsite.ownerUserId !== user!.id && user!.role !== "admin"))
-      return status(403, { message: "Forbidden" });
+    if (!photo) return status(404, { message: "Not found" });
+    await requireCampAccess(user, photo.campsiteId);
     await prisma.campsitePhoto.delete({ where: { id: params.id } });
     return { ok: true };
   })
@@ -74,8 +71,8 @@ export const ownerRoutes = new Elysia({ prefix: "/api/owner" })
         where: { id: params.id },
         include: { campsite: true },
       });
-      if (!r || (r.campsite.ownerUserId !== user!.id && user!.role !== "admin"))
-        return status(403, { message: "Forbidden" });
+      if (!r) return status(404, { message: "Not found" });
+      await requireCampAccess(user, r.campsiteId);
       return prisma.review.update({
         where: { id: params.id },
         data: { ownerReply: body.reply, ownerReplyAt: new Date() },

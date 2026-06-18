@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { BadgeCheck, Bookmark, MapPin } from "lucide-react";
+import { BadgeCheck, MapPin } from "lucide-react";
 import type { CampsiteLight } from "@/lib/types";
 import { cn, formatKm, formatPrice } from "@/lib/utils";
 import { AmenityIcon } from "./amenity-icon";
 import { Rating } from "./rating";
+import { FavoriteButton } from "./favorite-button";
 
 export function CampsiteCard({
   c,
@@ -54,14 +55,10 @@ export function CampsiteCard({
           )}
         </div>
 
-        <button
-          type="button"
-          aria-label="บันทึกไว้"
-          onClick={(e) => e.preventDefault()}
-          className="absolute right-3 top-3 grid size-8 place-items-center rounded-full bg-card/85 text-primary backdrop-blur transition hover:bg-card hover:text-ember"
-        >
-          <Bookmark className="size-4" />
-        </button>
+        <FavoriteButton
+          campId={c.id}
+          className="absolute right-3 top-3 size-8 bg-card/85 backdrop-blur hover:bg-card"
+        />
 
         <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
           <span className="rounded-full bg-card/90 px-2.5 py-1 text-sm font-bold text-ember backdrop-blur">

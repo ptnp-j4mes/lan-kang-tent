@@ -22,7 +22,7 @@ export function SiteFooter() {
             <h4 className="mb-3 font-display text-base">{col.h}</h4>
             <ul className="space-y-2 text-sm text-primary-foreground/70">
               {col.links.map(([label, href]) => (
-                <li key={href}>
+                <li key={label}>
                   <Link href={href} className="hover:text-ember">
                     {label}
                   </Link>
@@ -34,7 +34,7 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-primary-foreground/15">
         <div className="container flex flex-col items-center justify-between gap-2 py-5 text-xs text-primary-foreground/60 sm:flex-row">
-          <p>© {new Date().getFullYear()} CampThai Map — ลานกางเต็นท์</p>
+          <p>© {new Date().getFullYear()} Larn kang tent — ลานกางเต็นท์</p>
           <p>Built with Next.js · Elysia · Prisma</p>
         </div>
       </div>

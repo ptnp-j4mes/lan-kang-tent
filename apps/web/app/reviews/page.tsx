@@ -5,7 +5,7 @@ import { MOCK_CAMPSITES } from "@/lib/mock";
 
 export const metadata: Metadata = {
   title: "รีวิวจากนักแคมป์",
-  description: "รวมรีวิวลานกางเต็นท์จากสมาชิก CampThai",
+  description: "รวมรีวิวลานกางเต็นท์จากสมาชิก Larn kang tent",
 };
 
 const REVIEWS = [
@@ -20,7 +20,7 @@ export default function ReviewsPage() {
     <div className="container py-10">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ember">ชุมชน</p>
       <h1 className="font-display text-3xl text-primary sm:text-4xl">รีวิวจากนักแคมป์</h1>
-      <p className="mt-1 text-sm text-muted-foreground">เสียงจริงจากสนาม จากสมาชิก CampThai</p>
+      <p className="mt-1 text-sm text-muted-foreground">เสียงจริงจากสนาม จากสมาชิก Larn kang tent</p>
 
       <div className="mt-8 columns-1 gap-4 sm:columns-2 lg:columns-3 [&>*]:mb-4">
         {REVIEWS.map((r) => {

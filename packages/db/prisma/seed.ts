@@ -139,15 +139,16 @@ const CAMPSITES: Seed[] = [
 async function main() {
   console.log("🌲 Seeding CampThai...");
 
+  const SEED_HASH = "$2b$10$4lxj3.gXRf0XJW4V..82JOh3uLwClMH0c007vWrt0MnhB9Euriuca"; // bcrypt "campthai123"
+
   // admin user
   const admin = await prisma.user.upsert({
     where: { email: "admin@campthai.app" },
-    update: {},
+    update: { passwordHash: SEED_HASH },
     create: {
       name: "CampThai Admin",
       email: "admin@campthai.app",
-      // bcrypt hash of "campthai123" — replace in real env
-      passwordHash: "$2a$10$abcdefghijklmnopqrstuv",
+      passwordHash: SEED_HASH,
       role: "admin",
     },
   });
@@ -199,7 +200,278 @@ async function main() {
     console.log(`  ✓ ${site.name}`);
   }
 
+  // ---- home banner (default) ----
+  if ((await prisma.homeBanner.count()) === 0) {
+    await prisma.homeBanner.create({
+      data: {
+        title: "กางเต็นท์ที่ไหนดี? เปิดแผนที่ แล้วออกเดินทาง",
+        subtitle: "ค้นหาลานกางเต็นท์จากทุกภาคของไทย กรองตามวิว ราคา สิ่งอำนวยความสะดวก อ่านรีวิวจริงจากนักแคมป์",
+        imageUrl: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=1600&q=80",
+        ctaLabel: "เปิดแผนที่ลานกางเต็นท์",
+        ctaHref: "/map",
+        isActive: true,
+      },
+    });
+    console.log("  ✓ default home banner");
+  }
+
+  // ---- sample articles (SEO) ----
+  if ((await prisma.article.count()) === 0) {
+    await prisma.article.createMany({
+      data: [
+        {
+          slug: "beginner-camping-checklist",
+          title: "เช็กลิสต์มือใหม่หัดกางเต็นท์ ครั้งแรกต้องเตรียมอะไรบ้าง",
+          excerpt: "รวมของจำเป็นสำหรับทริปแคมป์ครั้งแรก ตั้งแต่เต็นท์ ถุงนอน ไปจนถึงของกินและความปลอดภัย",
+          content: "การไปแคมป์ครั้งแรกอาจดูน่ากังวล แต่ถ้าเตรียมตัวดีก็สนุกได้ไม่ยาก\n\n1. เต็นท์และอุปกรณ์นอน — เลือกเต็นท์ตามจำนวนคน เผื่อพื้นที่เก็บของ ถุงนอนเลือกตามอุณหภูมิปลายทาง\n\n2. แสงสว่าง — ไฟฉายคาดหัวสะดวกที่สุด พกแบตสำรอง\n\n3. อาหารและน้ำ — เตรียมน้ำให้พอ อาหารทำง่าย เก็บขยะกลับทุกครั้ง\n\n4. ความปลอดภัย — เช็กพยากรณ์อากาศ บอกคนที่บ้านว่าไปไหน",
+          coverImageUrl: "https://images.unsplash.com/photo-1487730116645-74489c95b41b?w=1000&q=75",
+          status: "published",
+          tags: ["มือใหม่", "เช็กลิสต์"],
+          metaTitle: "เช็กลิสต์มือใหม่หัดกางเต็นท์ — เตรียมอะไรบ้างก่อนไปแคมป์",
+          metaDescription: "คู่มือเตรียมตัวไปแคมป์ครั้งแรกสำหรับมือใหม่ ครบทั้งเต็นท์ ถุงนอน อาหาร และความปลอดภัย",
+          publishedAt: new Date(),
+        },
+        {
+          slug: "best-camping-near-bangkok",
+          title: "5 ลานกางเต็นท์ใกล้กรุงเทพ ขับรถไม่ไกล ไปเช้าเย็นกลับได้",
+          excerpt: "รวมลานกางเต็นท์ที่ขับจากกรุงเทพไม่เกิน 3 ชั่วโมง เหมาะกับทริปสุดสัปดาห์",
+          content: "ไม่มีเวลาเยอะแต่อยากไปแคมป์? นี่คือลานใกล้กรุงเทพที่ไปง่าย\n\nหลายแห่งในภาคตะวันตกและอีสานตอนล่างขับถึงได้ในไม่กี่ชั่วโมง รถเก๋งเข้าได้ สิ่งอำนวยความสะดวกครบ เหมาะกับมือใหม่และครอบครัว\n\nเปิดแผนที่ในเว็บเพื่อกรองตามระยะทางจากตำแหน่งของคุณได้เลย",
+          coverImageUrl: "https://images.unsplash.com/photo-1517824806704-9040b037703b?w=1000&q=75",
+          status: "published",
+          tags: ["ใกล้กรุงเทพ", "สุดสัปดาห์"],
+          metaTitle: "5 ลานกางเต็นท์ใกล้กรุงเทพ ขับรถไม่ไกล",
+          metaDescription: "แนะนำลานกางเต็นท์ใกล้กรุงเทพ ขับไม่เกิน 3 ชม. เหมาะทริปสุดสัปดาห์ รถเก๋งเข้าได้",
+          publishedAt: new Date(),
+        },
+      ],
+    });
+    console.log("  ✓ sample articles");
+  }
+
+  const allCamps = await prisma.campsite.findMany({ select: { id: true, slug: true } });
+  const bySlug = new Map(allCamps.map((c) => [c.slug, c.id]));
+
+  // ---- owner users + camp profiles ----
+  const OWNERS = [
+    {
+      email: "somchai@campthai.app",
+      name: "สมชาย ลานเย็น",
+      phone: "081-111-2233",
+      line: "@somchai_camp",
+      facebook: "https://facebook.com/somchaicamp",
+      bio: "เปิดลานมา 5 ปี รักการแคมป์ตั้งแต่เด็ก ยินดีต้อนรับทุกคนครับ",
+      campsiteSlugs: ["pha-chana-dai", "doi-samer-dao"],
+    },
+    {
+      email: "pannee@campthai.app",
+      name: "พรรณี แคมป์ไทย",
+      phone: "089-222-3344",
+      line: "@pannee_camp",
+      facebook: "https://facebook.com/panneecamp",
+      bio: "ดูแลลานกางเต็นท์ภาคเหนือ บรรยากาศดี อากาศเย็น ยินดีต้อนรับค่ะ",
+      campsiteSlugs: ["pang-ung", "doi-inthanon-camp"],
+    },
+    {
+      email: "wichai@campthai.app",
+      name: "วิชัย แคมป์กลาง",
+      phone: "083-333-4455",
+      line: "@wichai_camp",
+      facebook: "https://facebook.com/wichaicamp",
+      bio: "ลานใกล้กรุง สะดวกสบาย พร้อมทุกสิ่งอำนวยความสะดวก ยินดีตอบทุกคำถามครับ",
+      campsiteSlugs: ["suan-phueng-river-camp", "wang-chan-camp"],
+    },
+  ];
+
+  for (const o of OWNERS) {
+    const ownerUser = await prisma.user.upsert({
+      where: { email: o.email },
+      update: { passwordHash: SEED_HASH },
+      create: {
+        name: o.name,
+        email: o.email,
+        passwordHash: SEED_HASH,
+        role: "owner",
+      },
+    });
+
+    for (const slug of o.campsiteSlugs) {
+      const campId = bySlug.get(slug);
+      if (!campId) continue;
+
+      // link owner to campsite
+      await prisma.campsite.update({
+        where: { id: campId },
+        data: { ownerUserId: ownerUser.id },
+      });
+
+      // camp profile (owner-managed layer)
+      await prisma.campProfile.upsert({
+        where: { campsiteId: campId },
+        update: {},
+        create: {
+          campsiteId: campId,
+          ownerUserId: ownerUser.id,
+          displayName: o.name,
+          bio: o.bio,
+          contactPhone: o.phone,
+          contactLine: o.line,
+          contactFacebook: o.facebook,
+          profileStatus: "published",
+          completenessScore: 80,
+          verifiedAt: new Date(),
+        },
+      });
+
+      // camp owner member record
+      await prisma.campOwnerMember.upsert({
+        where: { campsiteId_userId: { campsiteId: campId, userId: ownerUser.id } },
+        update: {},
+        create: {
+          campsiteId: campId,
+          userId: ownerUser.id,
+          role: "owner",
+          status: "active",
+        },
+      });
+
+      // calendar events (upcoming open + one closed)
+      const existing = await prisma.campCalendarEvent.count({ where: { campsiteId: campId } });
+      if (existing === 0) {
+        await prisma.campCalendarEvent.createMany({
+          data: [
+            {
+              campsiteId: campId,
+              eventType: "open",
+              startDate: day(1),
+              endDate: day(30),
+              title: "เปิดรับนักแคมป์",
+              note: "ว่างทุกวัน สามารถสอบถามได้ก่อนมาเสมอ",
+              isPublic: true,
+              createdBy: ownerUser.id,
+            },
+            {
+              campsiteId: campId,
+              eventType: "fully_booked",
+              startDate: day(14),
+              endDate: day(15),
+              title: "เต็มแล้ว — วันหยุดยาว",
+              note: "กรุณาจองล่วงหน้าช่วงวันหยุด",
+              isPublic: true,
+              createdBy: ownerUser.id,
+            },
+          ],
+        });
+      }
+    }
+    console.log(`  ✓ owner: ${ownerUser.email} (${o.campsiteSlugs.join(", ")})`);
+  }
+
+  // ---- demo member + dashboard data ----
+  const demoMember = await prisma.user.upsert({
+    where: { email: "member@campthai.app" },
+    update: { passwordHash: SEED_HASH },
+    create: {
+      name: "นักแคมป์ตัวอย่าง",
+      email: "member@campthai.app",
+      passwordHash: SEED_HASH,
+      role: "member",
+    },
+  });
+
+  // seed dashboard data for the demo member + any member who has none yet (e.g. self-registered)
+  const members = await prisma.user.findMany({ where: { role: "member" }, select: { id: true } });
+  for (const m of members) {
+    const has = await prisma.favoriteCampsite.count({ where: { userId: m.id } });
+    if (has === 0) await seedDashboard(m.id, bySlug);
+  }
+  console.log(`  ✓ dashboard demo data (${members.length} member(s), demo: ${demoMember.email})`);
+
   console.log("✅ Done.");
+}
+
+// relative day at UTC midnight (DateOnly columns)
+const day = (offset: number) => {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + offset);
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+};
+
+async function seedDashboard(userId: string, bySlug: Map<string, string>) {
+  const id = (slug: string) => bySlug.get(slug);
+
+  // favorites
+  const favSlugs = ["doi-samer-dao", "phu-kradueng", "doi-inthanon-camp", "suan-phueng-river-camp"];
+  await prisma.favoriteCampsite.createMany({
+    data: favSlugs.filter((s) => id(s)).map((s, i) => ({ userId, campsiteId: id(s)!, source: i % 2 ? "card" : "map_marker" })),
+    skipDuplicates: true,
+  });
+
+  // camping plans (varied status + dates → calendar)
+  const plan1 = await prisma.userCampingPlan.create({
+    data: {
+      userId, campsiteId: id("doi-inthanon-camp")!,
+      startDate: day(7), endDate: day(9), status: "planning", partySize: 4,
+      note: "ไปดูทะเลหมอกกับเพื่อน เตรียมถุงนอน -5°C",
+      checklistJson: [
+        { t: "เต็นท์ 3-4 คน", done: true },
+        { t: "ถุงนอนกันหนาว", done: true },
+        { t: "เตาแก๊ส + หม้อ", done: false },
+        { t: "ไฟฉายคาดหัว", done: false },
+      ],
+    },
+  });
+  await prisma.userCampingPlan.create({
+    data: {
+      userId, campsiteId: id("phu-kradueng")!,
+      startDate: day(21), endDate: day(23), status: "interested", partySize: 2,
+      note: "ทริปสองคน ลองเดินขึ้นเขา",
+    },
+  });
+  await prisma.userCampingPlan.create({
+    data: {
+      userId, campsiteId: id("suan-phueng-river-camp")!,
+      startDate: day(35), endDate: day(36), status: "contacted", partySize: 6,
+      note: "ปาร์ตี้ริมน้ำกับเพื่อนๆ",
+    },
+  });
+  await prisma.userCampingPlan.create({
+    data: {
+      userId, campsiteId: id("doi-samer-dao")!,
+      startDate: day(-21), endDate: day(-19), status: "visited", partySize: 3,
+      note: "ทริปครอบครัว จบสวย ทะเลหมอกเป๊ะ",
+    },
+  });
+
+  // booking inquiries (chat threads)
+  await prisma.bookingInquiry.create({
+    data: {
+      userId, campsiteId: id("doi-inthanon-camp")!, campingPlanId: plan1.id,
+      startDate: day(7), endDate: day(9), partySize: 4, tentCount: 2, carCount: 1, hasPet: false,
+      contactPhone: "081-234-5678",
+      message: "สอบถามวันที่ 7-9 ว่างไหมครับ มากัน 4 คน 2 เต็นท์ ขับรถเก๋งเข้าได้ไหม",
+      status: "owner_replied",
+      ownerReply: "ว่างครับ มีลานริมธารให้เลือก รถเก๋งเข้าถึงลานเลย แนะนำมาก่อนบ่ายจะได้จุดสวยๆ มีค่าบริการ 60 บาท/คน",
+      repliedAt: day(-1),
+    },
+  });
+  await prisma.bookingInquiry.create({
+    data: {
+      userId, campsiteId: id("suan-phueng-river-camp")!,
+      startDate: day(35), endDate: day(36), partySize: 6, tentCount: 3, hasPet: true,
+      message: "พาน้องหมามาด้วยได้ไหมครับ มากัน 6 คน 3 เต็นท์",
+      status: "sent",
+    },
+  });
+
+  // notifications
+  await prisma.notification.createMany({
+    data: [
+      { userId, type: "inquiry_replied", title: "เจ้าของลานตอบคำขอแล้ว", message: "ลานกางเต็นท์ดอยอินทนนท์ ยืนยันวันว่างของคุณ", targetType: "inquiry", createdAt: day(-1) },
+      { userId, type: "price_drop", title: "ลานโปรดลดราคา", message: "ดอยเสมอดาว ลดเหลือ ฿20/คืน ช่วงวันธรรมดา", createdAt: day(-2) },
+      { userId, type: "review_approved", title: "รีวิวของคุณได้รับการอนุมัติ", message: "ขอบคุณที่แบ่งปันประสบการณ์ที่ดอยเสมอดาว", readAt: day(-3), createdAt: day(-4) },
+    ],
+  });
 }
 
 main()

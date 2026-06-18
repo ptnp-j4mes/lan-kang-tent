@@ -14,7 +14,7 @@ export function Logo({ className, light = false }: { className?: string; light?:
         </svg>
       </span>
       <span className={cn("flex flex-col leading-none", light ? "text-primary-foreground" : "text-primary")}>
-        <span className="font-display text-lg tracking-tight">CampThai</span>
+        <span className="font-display text-lg tracking-tight">Larn kang tent</span>
         <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
           ลานกางเต็นท์
         </span>

@@ -1,10 +1,11 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Map, Quote, Star } from "lucide-react";
 import { Hero } from "@/components/home/hero";
 import { SectionRail } from "@/components/section-rail";
 import { Button } from "@/components/ui/button";
-import { getProvinces, popular, topRated } from "@/lib/api";
-import { REGIONS } from "@/lib/utils";
+import { getActiveBanner, getArticles, popular, topRated } from "@/lib/api";
+import { Reveal } from "@/components/reveal";
 
 const RECENT_REVIEWS = [
   { name: "พิมพ์ชนก", site: "ดอยเสมอดาว", rating: 5, text: "ทะเลหมอกสวยมาก ตื่นมาเจอวิวแบบนี้คุ้มเกินราคา เจ้าหน้าที่ดูแลดี", trip: "คู่รัก" },
@@ -13,47 +14,21 @@ const RECENT_REVIEWS = [
 ];
 
 export default async function HomePage() {
-  const provinces = await getProvinces();
+  const [banner, articles] = await Promise.all([getActiveBanner(), getArticles(3)]);
   const pop = popular(8);
   const top = topRated(8);
 
   return (
     <>
-      <Hero />
+      <Hero banner={banner} />
 
       <SectionRail eyebrow="มาแรง" title="ลานกางเต็นท์ยอดนิยม" href="/campsites?sort=popular" items={pop} />
-
-      {/* by province */}
-      <section className="container py-12">
-        <div className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ember">เลือกพื้นที่</p>
-          <h2 className="mt-1 font-display text-2xl text-primary sm:text-3xl">ลานกางเต็นท์ตามจังหวัด</h2>
-        </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {provinces.map((p) => (
-            <Link
-              key={p.province}
-              href={`/province/${encodeURIComponent(p.province)}`}
-              className="group flex items-center justify-between rounded-xl border bg-card px-4 py-3.5 shadow-field transition hover:-translate-y-0.5 hover:border-ember hover:shadow-lift"
-            >
-              <span>
-                <span className="block font-display text-lg text-primary">{p.province}</span>
-                <span className="text-xs text-muted-foreground">
-                  {p.region ? REGIONS[p.region] ?? p.region : ""}
-                </span>
-              </span>
-              <span className="grid size-8 place-items-center rounded-full bg-secondary text-sm font-bold text-secondary-foreground group-hover:bg-ember group-hover:text-ember-foreground">
-                {p.count}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
 
       <SectionRail eyebrow="คะแนนสูง" title="ลานกางเต็นท์คะแนนสูง" href="/campsites?sort=rating" items={top} />
 
       {/* map teaser */}
-      <section className="container py-12">
+      <section className="container py-6">
+        <Reveal>
         <div className="grain relative overflow-hidden rounded-3xl border border-primary/20 bg-primary text-primary-foreground shadow-lift">
           <div className="absolute inset-0 opacity-25">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -92,10 +67,49 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
+        </Reveal>
       </section>
 
+      {/* articles / news */}
+      {articles.length > 0 && (
+        <section className="container py-6">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <Reveal>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ember">บทความ & ข่าว</p>
+              <h2 className="mt-1 font-display text-2xl text-primary sm:text-3xl">เรื่องน่ารู้ก่อนออกแคมป์</h2>
+            </Reveal>
+            <Link href="/articles" className="group inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-ember">
+              ดูทั้งหมด <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+          <div className="grid gap-5 md:grid-cols-3">
+            {articles.map((a, i) => (
+              <Reveal key={a.id} delay={i * 90}>
+                <Link href={`/articles/${a.slug}`} className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card shadow-field transition hover:-translate-y-1 hover:shadow-lift">
+                  <div className="relative aspect-[16/9] bg-secondary">
+                    {a.coverImageUrl && <Image src={a.coverImageUrl} alt={a.title} fill sizes="(max-width:768px) 100vw, 360px" className="object-cover transition-transform duration-700 group-hover:scale-105" />}
+                  </div>
+                  <div className="flex flex-1 flex-col gap-2 p-5">
+                    <div className="flex flex-wrap gap-1.5">
+                      {a.tags.slice(0, 2).map((t) => (
+                        <span key={t} className="rounded-full bg-secondary px-2 py-0.5 text-[11px] text-secondary-foreground">{t}</span>
+                      ))}
+                    </div>
+                    <h3 className="font-display text-lg leading-snug text-primary group-hover:text-ember">{a.title}</h3>
+                    {a.excerpt && <p className="line-clamp-2 text-sm text-muted-foreground">{a.excerpt}</p>}
+                    <span className="mt-auto inline-flex items-center gap-1 pt-1 text-sm font-semibold text-ember">
+                      อ่านต่อ <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </div>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* recent reviews */}
-      <section className="container py-12">
+      <section className="container py-6">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ember">เสียงจริงจากสนาม</p>
@@ -106,8 +120,9 @@ export default async function HomePage() {
           </Link>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
-          {RECENT_REVIEWS.map((r) => (
-            <figure key={r.name} className="relative flex flex-col rounded-2xl border bg-card p-6 shadow-field">
+          {RECENT_REVIEWS.map((r, i) => (
+            <Reveal key={r.name} delay={i * 90}>
+            <figure className="relative flex h-full flex-col rounded-2xl border bg-card p-6 shadow-field">
               <Quote className="size-7 text-ember/30" />
               <blockquote className="mt-2 flex-1 text-sm leading-relaxed text-foreground/90">{r.text}</blockquote>
               <div className="mt-4 flex items-center gap-1">
@@ -121,6 +136,7 @@ export default async function HomePage() {
                 <span className="block text-xs text-muted-foreground">รีวิว {r.site}</span>
               </figcaption>
             </figure>
+            </Reveal>
           ))}
         </div>
       </section>
