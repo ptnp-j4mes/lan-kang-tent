@@ -349,6 +349,12 @@ model SiteSettings {
   organizationName String?  @map("organization_name")
   twitterHandle    String?  @map("twitter_handle")
   robotsExtra      String?  @map("robots_extra")
+  // ---- AIO (answer-engine / AI optimization) ----
+  aioSummary       String?  @map("aio_summary") // concise site description for AI crawlers / llms.txt
+  aioFaqJson       Json?    @map("aio_faq_json") // [{q,a}] → FAQPage schema.org
+  // ---- GA4 (Data API) ----
+  ga4PropertyId    String?  @map("ga4_property_id") // numeric property id for the Data API (≠ ga4Id "G-XXXX")
+  seoGeneratedAt   DateTime? @map("seo_generated_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@map("site_settings")

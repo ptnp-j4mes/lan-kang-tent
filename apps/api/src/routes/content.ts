@@ -2,6 +2,8 @@ import { Elysia, t } from "elysia";
 import { prisma } from "@ckt/db";
 import { authPlugin } from "../lib/auth";
 import { requireRole } from "../lib/rbac";
+import { ga4Configured, topPages, topSearchTerms } from "../lib/ga4";
+import { generateSeo } from "../lib/seo";
 
 const settingsDefault = { id: "default" };
 
@@ -79,8 +81,57 @@ export const contentAdminRoutes = new Elysia({ prefix: "/api/admin" })
           organizationName: t.String(),
           twitterHandle: t.String(),
           robotsExtra: t.String(),
+          aioSummary: t.String(),
+          aioFaqJson: t.Any(),
+          ga4PropertyId: t.String(),
         }),
       ),
+    },
+  )
+  // ---- SEO/AIO generation from GA4 ----
+  .get("/seo/ga4-status", async () => {
+    const s = await prisma.siteSettings.findUnique({ where: { id: "default" }, select: { ga4PropertyId: true } });
+    return { credentialsConfigured: ga4Configured(), propertyId: s?.ga4PropertyId ?? null };
+  })
+  .post(
+    "/seo/generate",
+    async ({ body, status }) => {
+      if (!ga4Configured())
+        return status(422, { message: "ยังไม่ได้ตั้งค่า GA4 service account (GA4_SA_CLIENT_EMAIL / GA4_SA_PRIVATE_KEY)" });
+      const settings = await prisma.siteSettings.upsert({ where: { id: "default" }, update: {}, create: { id: "default" } });
+      if (!settings.ga4PropertyId)
+        return status(422, { message: "ยังไม่ได้กรอก GA4 Property ID" });
+
+      const days = body?.days ?? 28;
+      try {
+        const [pages, terms] = await Promise.all([
+          topPages(settings.ga4PropertyId, days),
+          topSearchTerms(settings.ga4PropertyId, days),
+        ]);
+        const suggestion = generateSeo(settings.siteName ?? "", pages, terms);
+        return { suggestion, source: { topPages: pages.slice(0, 10), topSearchTerms: terms.slice(0, 10), days } };
+      } catch (e: any) {
+        return status(502, { message: `เรียก GA4 ไม่สำเร็จ: ${e?.message ?? e}` });
+      }
+    },
+    { body: t.Optional(t.Object({ days: t.Optional(t.Integer({ minimum: 1, maximum: 365 })) })) },
+  )
+  // apply a generated suggestion + stamp seoGeneratedAt
+  .patch(
+    "/seo/apply",
+    async ({ body }) =>
+      prisma.siteSettings.upsert({
+        where: { id: "default" },
+        update: { ...(body as any), seoGeneratedAt: new Date() },
+        create: { id: "default", ...(body as any), seoGeneratedAt: new Date() },
+      }),
+    {
+      body: t.Object({
+        metaTitle: t.Optional(t.String()),
+        metaDescription: t.Optional(t.String()),
+        keywords: t.Optional(t.Array(t.String())),
+        aioSummary: t.Optional(t.String()),
+      }),
     },
   )
   // banners
