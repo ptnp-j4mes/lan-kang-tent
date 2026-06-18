@@ -11,6 +11,7 @@ import { AmenityIcon } from "@/components/amenity-icon";
 import { DetailMap } from "@/components/map/detail-map";
 import { FavoriteButton } from "@/components/favorite-button";
 import { TripActions } from "@/components/detail/trip-actions";
+import { OwnerManage } from "@/components/detail/owner-manage";
 import { formatPrice } from "@/lib/utils";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -34,6 +35,9 @@ export default async function DetailPage({ params }: { params: Promise<{ slug: s
 
   return (
     <article>
+      {/* owner-only inline management (self-hides for non-owners) */}
+      <OwnerManage campId={c.id} />
+
       {/* hero banner */}
       <section className="relative h-[44vh] min-h-[360px] w-full overflow-hidden bg-primary">
         {c.gallery[0] && <Image src={c.gallery[0]} alt={c.name} fill sizes="100vw" className="object-cover" priority />}

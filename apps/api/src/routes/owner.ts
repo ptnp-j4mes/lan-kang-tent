@@ -11,17 +11,22 @@ export const ownerRoutes = new Elysia({ prefix: "/api/owner" })
   .get("/campsites", async ({ user }) =>
     prisma.campsite.findMany({
       where: { ownerUserId: user!.id },
-      include: { photos: { orderBy: { sortOrder: "asc" } } },
+      include: {
+        photos: { orderBy: { sortOrder: "asc" } },
+        amenities: { include: { amenity: true } },
+      },
     }),
   )
   .patch(
     "/campsites/:id",
     async ({ user, params, body }) => {
-      // owner/staff/admin only; safe fields only
+      // owner/staff/admin only; safe fields only (slug stays canonical/admin-owned)
       await requireCampAccess(user, params.id);
       return prisma.campsite.update({
         where: { id: params.id },
         data: {
+          name: body.name,
+          district: body.district,
           priceMin: body.priceMin,
           priceMax: body.priceMax,
           phone: body.phone,
@@ -34,6 +39,8 @@ export const ownerRoutes = new Elysia({ prefix: "/api/owner" })
     },
     {
       body: t.Object({
+        name: t.Optional(t.String({ minLength: 2, maxLength: 120 })),
+        district: t.Optional(t.String()),
         priceMin: t.Optional(t.Integer()),
         priceMax: t.Optional(t.Integer()),
         phone: t.Optional(t.String()),
@@ -43,6 +50,35 @@ export const ownerRoutes = new Elysia({ prefix: "/api/owner" })
         description: t.Optional(t.String()),
       }),
     },
+  )
+  // replace the amenity set for a camp
+  .patch(
+    "/campsites/:id/amenities",
+    async ({ user, params, body }) => {
+      await requireCampAccess(user, params.id);
+      const amenities = await prisma.amenity.findMany({ where: { key: { in: body.keys } }, select: { id: true } });
+      await prisma.$transaction([
+        prisma.campsiteAmenity.deleteMany({ where: { campsiteId: params.id } }),
+        prisma.campsiteAmenity.createMany({
+          data: amenities.map((a) => ({ campsiteId: params.id, amenityId: a.id })),
+          skipDuplicates: true,
+        }),
+      ]);
+      return { ok: true, count: amenities.length };
+    },
+    { body: t.Object({ keys: t.Array(t.String()) }) },
+  )
+  // owner-confirmed location pin
+  .patch(
+    "/campsites/:id/location",
+    async ({ user, params, body }) => {
+      await requireCampAccess(user, params.id);
+      return prisma.campsite.update({
+        where: { id: params.id },
+        data: { latitude: body.latitude, longitude: body.longitude, locationAccuracyStatus: "owner_confirmed" },
+      });
+    },
+    { body: t.Object({ latitude: t.Number(), longitude: t.Number() }) },
   )
   .post(
     "/campsites/:id/photos",
