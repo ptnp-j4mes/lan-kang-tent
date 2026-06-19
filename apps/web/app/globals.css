@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  CampThai — "Field Guide" aesthetic.
+  Warm kraft paper, pine ink, ember accent, topographic textures.
+*/
+
+@layer base {
+  :root {
+    --background: 41 44% 93%;        /* kraft paper */
+    --foreground: 40 16% 13%;        /* ink */
+
+    --card: 40 40% 97%;
+    --card-foreground: 40 16% 13%;
+    --popover: 40 40% 97%;
+    --popover-foreground: 40 16% 13%;
+
+    --primary: 152 34% 18%;          /* deep pine */
+    --primary-foreground: 44 50% 95%;
+
+    --secondary: 38 30% 86%;         /* sand */
+    --secondary-foreground: 152 30% 18%;
+
+    --muted: 40 26% 88%;
+    --muted-foreground: 40 10% 38%;
+
+    --accent: 84 22% 78%;            /* pale moss */
+    --accent-foreground: 152 34% 16%;
+
+    --ember: 16 72% 50%;             /* sunset ember — CTA */
+    --ember-foreground: 44 60% 97%;
+    --moss: 84 24% 38%;
+    --clay: 24 42% 56%;
+
+    --destructive: 4 64% 48%;
+    --destructive-foreground: 44 50% 96%;
+
+    --border: 38 22% 78%;
+    --input: 38 22% 80%;
+    --ring: 16 72% 50%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 152 24% 9%;
+    --foreground: 44 36% 90%;
+    --card: 152 20% 12%;
+    --card-foreground: 44 36% 90%;
+    --popover: 152 20% 12%;
+    --popover-foreground: 44 36% 90%;
+    --primary: 84 30% 62%;
+    --primary-foreground: 152 30% 10%;
+    --secondary: 152 14% 18%;
+    --secondary-foreground: 44 36% 90%;
+    --muted: 152 12% 18%;
+    --muted-foreground: 44 14% 64%;
+    --accent: 152 16% 22%;
+    --accent-foreground: 44 36% 90%;
+    --ember: 16 78% 56%;
+    --ember-foreground: 152 30% 8%;
+    --moss: 84 28% 52%;
+    --clay: 24 44% 60%;
+    --border: 152 12% 22%;
+    --input: 152 12% 24%;
+    --ring: 16 78% 56%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "cv01";
+    /* topographic contour wash */
+    background-image:
+      radial-gradient(circle at 12% 18%, hsl(var(--moss) / 0.06), transparent 38%),
+      radial-gradient(circle at 88% 8%, hsl(var(--ember) / 0.05), transparent 32%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Cg fill='none' stroke='%23234534' stroke-opacity='0.05' stroke-width='1'%3E%3Cpath d='M0 300 Q150 220 300 300 T600 300'/%3E%3Cpath d='M0 340 Q150 260 300 340 T600 340'/%3E%3Cpath d='M0 380 Q150 300 300 380 T600 380'/%3E%3Cpath d='M0 260 Q150 180 300 260 T600 260'/%3E%3Cpath d='M0 220 Q150 140 300 220 T600 220'/%3E%3C/g%3E%3C/svg%3E");
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  /* paper-grain overlay for hero / panels */
+  .grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.5;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+  }
+
+  .stamp {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-card/70 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary;
+  }
+
+  .topo-divider {
+    height: 14px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='14'%3E%3Cpath d='M0 7 L20 1 L40 7 L60 13 L80 7' fill='none' stroke='%23234534' stroke-opacity='0.3' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-repeat: repeat-x;
+  }
+
+  .link-underline {
+    background-image: linear-gradient(hsl(var(--ember)), hsl(var(--ember)));
+    background-size: 0% 2px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.3s ease;
+  }
+  .link-underline:hover {
+    background-size: 100% 2px;
+  }
+}
+
+/* hide scrollbar on horizontal rails */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* google maps info window reset */
+.gm-style .gm-style-iw-c { padding: 0 !important; border-radius: 14px !important; }
