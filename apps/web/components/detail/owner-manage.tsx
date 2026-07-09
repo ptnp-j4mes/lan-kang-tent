@@ -67,10 +67,12 @@ function Drawer({ camp, onClose, onSaved }: { camp: any; onClose: () => void; on
 // All editable sections for one camp — reused by the detail-page drawer and the
 // /owner console. `camp` is the owner-scoped shape from /api/owner/campsites
 // (includes photos + amenities).
-export function CampSections({ camp, onSaved }: { camp: any; onSaved?: () => void }) {
+// `wide` packs blocks into 2 balanced columns on large screens (the /owner
+// console). Drawer leaves it off — narrow, stays single column.
+export function CampSections({ camp, onSaved, wide }: { camp: any; onSaved?: () => void; wide?: boolean }) {
   const saved = onSaved ?? (() => {});
   return (
-    <div className="space-y-6">
+    <div className={wide ? "gap-6 lg:columns-2 [&>section]:mb-6 [&>section]:break-inside-avoid" : "space-y-6"}>
       <BasicSection camp={camp} onSaved={saved} />
       <AmenitySection camp={camp} onSaved={saved} />
       <PhotoSection camp={camp} onSaved={saved} />
@@ -208,7 +210,7 @@ function PhotoSection({ camp, onSaved }: { camp: any; onSaved: () => void }) {
       <div className="mb-3 grid grid-cols-3 gap-2">
         {photos.map((p) => (
           <div key={p.id} className="group relative aspect-square overflow-hidden rounded-lg border bg-secondary">
-            <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
+            <img src={p.imageUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
             <button onClick={() => remove(p.id)} className="absolute right-1 top-1 rounded bg-black/60 p-1 text-white opacity-0 transition group-hover:opacity-100"><Trash2 className="size-3.5" /></button>
           </div>
         ))}

@@ -202,6 +202,34 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
   return null;
 }
 
+// ---- editable page text (CMS) ----
+// API merges overrides with its own defaults; `fallback` covers API-down/offline.
+export async function getContent<T extends Record<string, string>>(key: string, fallback: T): Promise<T> {
+  if (USE_API && API) {
+    try {
+      const r = await fetch(`${API}/api/content/${key}`, { next: { revalidate: 60 } }).then((x) => x.json());
+      return { ...fallback, ...r } as T;
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+}
+
+// latest approved member reviews for the homepage. `fallback` = demo copy.
+export type RecentReview = { id?: string; name: string; site: string; rating: number; text: string; trip?: string | null };
+export async function getRecentReviews(fallback: RecentReview[], limit = 3): Promise<RecentReview[]> {
+  if (USE_API && API) {
+    try {
+      const r = (await fetch(`${API}/api/reviews/recent?limit=${limit}`, { cache: "no-store" }).then((x) => x.json())) as RecentReview[];
+      return r.length ? r : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+}
+
 // ---- content (banners + articles) ----
 export type Banner = {
   id: string;

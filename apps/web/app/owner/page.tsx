@@ -94,7 +94,7 @@ function CampsTab() {
             </div>
             {c.isVerified && <span className="rounded-full bg-[hsl(142_55%_42%/0.16)] px-2 py-0.5 text-[11px] font-medium text-[hsl(142_45%_30%)]">ยืนยันแล้ว</span>}
           </div>
-          <CampSections camp={c} onSaved={load} />
+          <CampSections camp={c} onSaved={load} wide />
         </div>
       ))}
     </div>

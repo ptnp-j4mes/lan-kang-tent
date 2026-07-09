@@ -39,7 +39,7 @@ export default function ProfilePage() {
           <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-full bg-ember/20 ring-4 ring-white/15">
             {p.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={p.avatarUrl} alt="" className="size-full object-cover" />
+              <img src={p.avatarUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
             ) : (
               <span className="font-display text-3xl text-ember-foreground">{initials}</span>
             )}

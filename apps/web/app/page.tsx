@@ -4,17 +4,39 @@ import { ArrowRight, Map, Quote, Star } from "lucide-react";
 import { Hero } from "@/components/home/hero";
 import { SectionRail } from "@/components/section-rail";
 import { Button } from "@/components/ui/button";
-import { getActiveBanner, getArticles, popular, topRated } from "@/lib/api";
+import { getActiveBanner, getArticles, getContent, getRecentReviews, popular, topRated } from "@/lib/api";
 import { Reveal } from "@/components/reveal";
 
+// offline/API-down fallback for the "เสียงจริงจากสนาม" section.
+// keep keys in sync with apps/api/src/lib/site-content.ts (home).
 const RECENT_REVIEWS = [
   { name: "พิมพ์ชนก", site: "ดอยเสมอดาว", rating: 5, text: "ทะเลหมอกสวยมาก ตื่นมาเจอวิวแบบนี้คุ้มเกินราคา เจ้าหน้าที่ดูแลดี", trip: "คู่รัก" },
   { name: "ก้องภพ", site: "สวนผึ้ง ริเวอร์ แคมป์", rating: 5, text: "พาครอบครัวมา เด็กๆ เล่นน้ำได้ ห้องน้ำสะอาด รถเก๋งเข้าสบาย", trip: "ครอบครัว" },
   { name: "Natcha", site: "เขาค้อ", rating: 4, text: "วิวดี อากาศเย็น แต่คนเยอะหน่อยช่วงวันหยุด แนะนำมาวันธรรมดา", trip: "กลุ่มเพื่อน" },
 ];
 
+const HOME_DEFAULTS = {
+  popularEyebrow: "มาแรง",
+  popularTitle: "ลานกางเต็นท์ยอดนิยม",
+  topRatedEyebrow: "คะแนนสูง",
+  topRatedTitle: "ลานกางเต็นท์คะแนนสูง",
+  mapEyebrow: "แผนที่ทั่วไทย",
+  mapTitle: "ลานกางเต็นท์ทั้งประเทศ ในแผนที่เดียว",
+  mapBody: "ซูม เลื่อน คลิกหมุดเต็นท์ เปิดการ์ดดูราคาและรีวิวทันที กรองตามสิ่งที่คุณต้องการ หรือใช้โหมด “ใกล้ฉัน” หาลานใกล้ตัว",
+  mapCta: "เปิดแผนที่ลานกางเต็นท์",
+  articlesEyebrow: "บทความ & ข่าว",
+  articlesTitle: "เรื่องน่ารู้ก่อนออกแคมป์",
+  reviewsEyebrow: "เสียงจริงจากสนาม",
+  reviewsTitle: "รีวิวล่าสุดจากนักแคมป์",
+};
+
 export default async function HomePage() {
-  const [banner, articles] = await Promise.all([getActiveBanner(), getArticles(3)]);
+  const [banner, articles, c, reviews] = await Promise.all([
+    getActiveBanner(),
+    getArticles(3),
+    getContent("home", HOME_DEFAULTS),
+    getRecentReviews(RECENT_REVIEWS),
+  ]);
   const pop = popular(8);
   const top = topRated(8);
 
@@ -22,44 +44,45 @@ export default async function HomePage() {
     <>
       <Hero banner={banner} />
 
-      <SectionRail eyebrow="มาแรง" title="ลานกางเต็นท์ยอดนิยม" href="/campsites?sort=popular" items={pop} />
+      <SectionRail eyebrow={c.popularEyebrow} title={c.popularTitle} href="/campsites?sort=popular" items={pop} />
 
-      <SectionRail eyebrow="คะแนนสูง" title="ลานกางเต็นท์คะแนนสูง" href="/campsites?sort=rating" items={top} />
+      <SectionRail eyebrow={c.topRatedEyebrow} title={c.topRatedTitle} href="/campsites?sort=rating" items={top} />
 
       {/* map teaser */}
       <section className="container py-6">
         <Reveal>
         <div className="grain relative overflow-hidden rounded-3xl border border-primary/20 bg-primary text-primary-foreground shadow-lift">
           <div className="absolute inset-0 opacity-25">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src="https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=1400&q=70"
               alt=""
-              className="size-full object-cover"
+              fill
+              sizes="100vw"
+              className="object-cover"
             />
           </div>
           <div className="relative grid gap-6 p-8 md:grid-cols-2 md:items-center md:p-12">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ember">แผนที่ทั่วไทย</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ember">{c.mapEyebrow}</p>
               <h2 className="mt-2 font-display text-3xl sm:text-4xl">
-                ลานกางเต็นท์ทั้งประเทศ ในแผนที่เดียว
+                {c.mapTitle}
               </h2>
               <p className="mt-3 max-w-md text-primary-foreground/80">
-                ซูม เลื่อน คลิกหมุดเต็นท์ เปิดการ์ดดูราคาและรีวิวทันที กรองตามสิ่งที่คุณต้องการ
-                หรือใช้โหมด “ใกล้ฉัน” หาลานใกล้ตัว
+                {c.mapBody}
               </p>
               <Button asChild variant="ember" size="lg" className="mt-6">
                 <Link href="/map">
-                  <Map className="size-5" /> เปิดแผนที่ลานกางเต็นท์
+                  <Map className="size-5" /> {c.mapCta}
                 </Link>
               </Button>
             </div>
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-white/20">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=900&q=75"
                 alt="แผนที่ลานกางเต็นท์"
-                className="size-full object-cover"
+                fill
+                sizes="(max-width:768px) 100vw, 600px"
+                className="object-cover"
               />
               <span className="absolute left-1/2 top-1/2 grid size-12 -translate-x-1/2 -translate-y-1/2 animate-sway place-items-center rounded-full bg-ember text-ember-foreground shadow-lift">
                 <Map className="size-6" />
@@ -75,8 +98,8 @@ export default async function HomePage() {
         <section className="container py-6">
           <div className="mb-6 flex items-end justify-between gap-4">
             <Reveal>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ember">บทความ & ข่าว</p>
-              <h2 className="mt-1 font-display text-2xl text-primary sm:text-3xl">เรื่องน่ารู้ก่อนออกแคมป์</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ember">{c.articlesEyebrow}</p>
+              <h2 className="mt-1 font-display text-2xl text-primary sm:text-3xl">{c.articlesTitle}</h2>
             </Reveal>
             <Link href="/articles" className="group inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-ember">
               ดูทั้งหมด <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
@@ -112,16 +135,16 @@ export default async function HomePage() {
       <section className="container py-6">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ember">เสียงจริงจากสนาม</p>
-            <h2 className="mt-1 font-display text-2xl text-primary sm:text-3xl">รีวิวล่าสุดจากนักแคมป์</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ember">{c.reviewsEyebrow}</p>
+            <h2 className="mt-1 font-display text-2xl text-primary sm:text-3xl">{c.reviewsTitle}</h2>
           </div>
           <Link href="/reviews" className="group inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-ember">
             ดูทั้งหมด <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
-          {RECENT_REVIEWS.map((r, i) => (
-            <Reveal key={r.name} delay={i * 90}>
+          {reviews.map((r, i) => (
+            <Reveal key={r.id ?? r.name} delay={i * 90}>
             <figure className="relative flex h-full flex-col rounded-2xl border bg-card p-6 shadow-field">
               <Quote className="size-7 text-ember/30" />
               <blockquote className="mt-2 flex-1 text-sm leading-relaxed text-foreground/90">{r.text}</blockquote>
@@ -132,7 +155,7 @@ export default async function HomePage() {
               </div>
               <figcaption className="mt-3 border-t pt-3 text-sm">
                 <span className="font-semibold text-primary">{r.name}</span>
-                <span className="text-muted-foreground"> · {r.trip}</span>
+                {r.trip && <span className="text-muted-foreground"> · {r.trip}</span>}
                 <span className="block text-xs text-muted-foreground">รีวิว {r.site}</span>
               </figcaption>
             </figure>

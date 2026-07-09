@@ -64,10 +64,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="th" className={`${display.variable} ${body.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://images.unsplash.com" />
+      </head>
       <body className="min-h-screen font-sans antialiased">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([org, website]) }} />
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
+          ข้ามไปเนื้อหา
+        </a>
         <SiteHeader />
-        <main>{children}</main>
+        <main id="main">{children}</main>
         <SiteFooter />
         <Toaster />
         {/* GA4 — loads only when admin sets ga4Id */}

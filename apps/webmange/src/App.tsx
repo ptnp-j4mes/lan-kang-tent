@@ -9,6 +9,7 @@ import { ReviewsPage } from "@/pages/admin/reviews";
 import { ClaimsPage } from "@/pages/admin/claims";
 import { BannersPage } from "@/pages/admin/banners";
 import { ArticlesPage } from "@/pages/admin/articles";
+import { ContentPage } from "@/pages/admin/content";
 import { UsersPage } from "@/pages/admin/users";
 import { SettingsPage } from "@/pages/admin/settings";
 
@@ -32,6 +33,7 @@ function Shell() {
         <Route path="claims" element={<ClaimsPage />} />
         <Route path="banners" element={<BannersPage />} />
         <Route path="articles" element={<ArticlesPage />} />
+        <Route path="content" element={<ContentPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

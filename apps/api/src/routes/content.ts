@@ -4,8 +4,17 @@ import { authPlugin } from "../lib/auth";
 import { requireRole } from "../lib/rbac";
 import { ga4Configured, topPages, topSearchTerms } from "../lib/ga4";
 import { generateSeo } from "../lib/seo";
+import { CONTENT_PAGES, findPage, pageDefaults } from "../lib/site-content";
 
 const settingsDefault = { id: "default" };
+
+// merge stored overrides over code-side defaults for a page key
+async function mergedContent(key: string) {
+  const page = findPage(key);
+  if (!page) return {};
+  const row = await prisma.siteContent.findUnique({ where: { key } });
+  return { ...pageDefaults(page), ...((row?.value as Record<string, string>) ?? {}) };
+}
 
 // ---------- public ----------
 export const contentPublicRoutes = new Elysia()
@@ -30,7 +39,37 @@ export const contentPublicRoutes = new Elysia()
     const a = await prisma.article.findFirst({ where: { slug: params.slug, status: "published" } });
     if (!a) return status(404, { message: "Not found" });
     return a;
-  });
+  })
+  // editable page text, merged with defaults: { key: value }
+  .get("/api/content/:key", ({ params }) => mergedContent(params.key))
+  // latest approved member reviews (homepage "เสียงจริงจากสนาม")
+  .get(
+    "/api/reviews/recent",
+    async ({ query }) => {
+      const rows = await prisma.review.findMany({
+        where: { status: "approved", comment: { not: null } },
+        orderBy: { createdAt: "desc" },
+        take: query.limit ? Number(query.limit) : 3,
+        select: {
+          id: true,
+          comment: true,
+          ratingOverall: true,
+          tripType: true,
+          user: { select: { name: true } },
+          campsite: { select: { name: true } },
+        },
+      });
+      return rows.map((r) => ({
+        id: r.id,
+        name: r.user.name,
+        site: r.campsite.name,
+        rating: r.ratingOverall,
+        text: r.comment,
+        trip: r.tripType,
+      }));
+    },
+    { query: t.Object({ limit: t.Optional(t.String()) }) },
+  );
 
 // ---------- admin ----------
 const bannerBody = t.Object({
@@ -169,4 +208,29 @@ export const contentAdminRoutes = new Elysia({ prefix: "/api/admin" })
   .delete("/articles/:id", async ({ params }) => {
     await prisma.article.delete({ where: { id: params.id } });
     return { ok: true };
-  });
+  })
+  // ---- page content (CMS) ----
+  // editor metadata: field labels/defaults + current merged values for every page
+  .get("/content", async () => {
+    const rows = await prisma.siteContent.findMany();
+    const byKey = Object.fromEntries(rows.map((r) => [r.key, r.value as Record<string, string>]));
+    return CONTENT_PAGES.map((p) => ({
+      key: p.key,
+      label: p.label,
+      fields: p.fields,
+      values: { ...pageDefaults(p), ...(byKey[p.key] ?? {}) },
+    }));
+  })
+  .put(
+    "/content/:key",
+    async ({ params, body, status }) => {
+      if (!findPage(params.key)) return status(404, { message: "Unknown page" });
+      const value = (body as { value: Record<string, string> }).value;
+      return prisma.siteContent.upsert({
+        where: { key: params.key },
+        update: { value },
+        create: { key: params.key, value },
+      });
+    },
+    { body: t.Object({ value: t.Record(t.String(), t.String()) }) },
+  );

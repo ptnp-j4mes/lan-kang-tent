@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Map, Tent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AmenityIcon } from "@/components/amenity-icon";
@@ -37,8 +38,7 @@ export function Hero({ banner }: { banner?: Banner | null }) {
     <section className="grain relative overflow-hidden">
       {/* background image */}
       <div className="absolute inset-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={b.imageUrl} alt="" className="size-full object-cover" />
+        <Image src={b.imageUrl} alt="" fill priority sizes="100vw" className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-primary/85 via-primary/55 to-background" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,hsl(var(--ember)/0.25),transparent_45%)]" />
       </div>

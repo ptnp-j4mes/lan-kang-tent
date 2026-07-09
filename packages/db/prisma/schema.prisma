@@ -360,6 +360,16 @@ model SiteSettings {
   @@map("site_settings")
 }
 
+// Editable page text (CMS). One row per page section, value = JSON blob
+// merged over code-side defaults. Keeps admin-editable copy out of the JSX.
+model SiteContent {
+  key       String   @id // e.g. "home", "owners", "footer"
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("site_content")
+}
+
 model HomeBanner {
   id        String   @id @default(cuid())
   title     String

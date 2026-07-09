@@ -2,6 +2,7 @@
 
 import { Suspense, useDeferredValue, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Map, MapPin, Search, SlidersHorizontal, Tent, X } from "lucide-react";
 import type { MapFilters } from "@/lib/types";
@@ -74,8 +75,7 @@ function Listing() {
       {/* hero banner */}
       <section className="grain relative overflow-hidden">
         <div className="absolute inset-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=1600&q=80" alt="" className="size-full object-cover" />
+          <Image src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=1600&q=80" alt="" fill priority sizes="100vw" className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/85 via-primary/65 to-background" />
         </div>
 
