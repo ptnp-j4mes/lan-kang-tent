@@ -20,15 +20,6 @@ export const authPlugin = new Elysia({ name: "auth" })
     return { user };
   });
 
-// guards — throw 401/403 via status
-export function requireUser(user: any) {
-  if (!user) throw { status: 401, message: "Unauthorized" };
-  if (user.status !== "active") throw { status: 403, message: "Account not active" };
-  return user;
-}
-
-export function requireRole(user: any, ...roles: string[]) {
-  requireUser(user);
-  if (!roles.includes(user.role)) throw { status: 403, message: "Forbidden" };
-  return user;
-}
+// RBAC lives in ./rbac — re-exported so existing imports keep working.
+export { requireUser, requireRole, requireCampAccess, ROLES } from "./rbac";
+export type { Role, AuthUser } from "./rbac";

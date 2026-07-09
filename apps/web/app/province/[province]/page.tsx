@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Map } from "lucide-react";
-import { filterCampsites } from "@/lib/api";
+import { filterCampsites, getAllCampsites } from "@/lib/api";
 import { CampsiteCard } from "@/components/campsite-card";
 import { Button } from "@/components/ui/button";
 
@@ -25,7 +25,8 @@ export default async function ProvinceLanding({
 }) {
   const { province } = await params;
   const name = decodeURIComponent(province);
-  const list = filterCampsites({ province: name, amenities: [] });
+  const dataset = await getAllCampsites();
+  const list = filterCampsites({ province: name, amenities: [] }, dataset);
 
   return (
     <div className="container py-10">

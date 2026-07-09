@@ -25,7 +25,7 @@ export default function OwnersPage() {
             ลานของคุณ ให้คนแคมป์เจอง่ายขึ้น
           </h1>
           <p className="mt-4 max-w-xl text-primary-foreground/80">
-            claim ลานกางเต็นท์ของคุณบน CampThai เพื่ออัปเดตข้อมูลให้ถูกต้อง ใส่รูปสวยๆ
+            claim ลานกางเต็นท์ของคุณบน Larn kang tent เพื่ออัปเดตข้อมูลให้ถูกต้อง ใส่รูปสวยๆ
             ตอบกลับรีวิว และเข้าถึงนักแคมป์ทั่วประเทศ — ฟรี
           </p>
           <Button asChild variant="ember" className="mt-6">

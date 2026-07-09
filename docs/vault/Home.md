@@ -36,6 +36,11 @@ Repo: `lan-kang-tent`. Core loop: เปิดแผนที่ → เลื�
 - [[Pages & Routes]] — every route
 - [[Map Feature]] — the centerpiece
 
+### Phase 2 (planning → platform)
+- [[Phase 2 PRD]] — scope, flows, wireframes, acceptance
+- [[Phase 2 API & Schema]] — new tables + endpoints
+- [[Permission Matrix]] · [[Notification Matrix]] · [[Calendar Sync Plan]]
+
 ### Decisions
 - [[ADR-001 Stack Choice]]
 - [[ADR-002 Map Fallback]]

@@ -24,5 +24,45 @@ services:
     ports:
       - "6379:6379"
 
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: ckt-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://campthai:campthai@postgres:5432/campthai?schema=public
+      API_PORT: 4000
+      API_URL: http://localhost:4100
+      WEB_ORIGIN: http://localhost:3100,http://localhost:3200
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      GOOGLE_MAPS_SERVER_KEY: ${GOOGLE_MAPS_SERVER_KEY:-}
+      GA4_SA_CLIENT_EMAIL: ${GA4_SA_CLIENT_EMAIL:-}
+      GA4_SA_PRIVATE_KEY: ${GA4_SA_PRIVATE_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
+      FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
+    ports:
+      - "4100:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4100
+    container_name: ckt-web
+    restart: unless-stopped
+    environment:
+      API_INTERNAL_URL: http://api:4000
+    ports:
+      - "3100:3100"
+    depends_on:
+      - api
+
 volumes:
   ckt-pgdata:

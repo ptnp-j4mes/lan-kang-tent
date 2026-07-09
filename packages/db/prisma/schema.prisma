@@ -15,6 +15,7 @@ datasource db {
 enum UserRole {
   member
   owner
+  camp_staff
   admin
 }
 
@@ -100,6 +101,13 @@ model User {
   reports        Report[]
   reviewedClaims OwnerClaim[]      @relation("ClaimReviewer")
 
+  // Phase 2
+  profile        UserProfile?
+  campMemberships CampOwnerMember[]
+  campingPlans   UserCampingPlan[]
+  inquiries      BookingInquiry[]
+  notifications  Notification[]
+
   @@map("users")
 }
 
@@ -144,6 +152,14 @@ model Campsite {
   favorites       FavoriteCampsite[]
   ownerClaims     OwnerClaim[]
   syncLogs        GoogleSyncLog[]
+
+  // Phase 2
+  campProfile    CampProfile?
+  campMembers    CampOwnerMember[]
+  calendarEvents CampCalendarEvent[]
+  campingPlans   UserCampingPlan[]
+  inquiries      BookingInquiry[]
+  activityLogs   CampProfileActivityLog[]
 
   @@index([province])
   @@index([region])
@@ -257,6 +273,7 @@ model FavoriteCampsite {
   id         String   @id @default(cuid())
   userId     String   @map("user_id")
   campsiteId String   @map("campsite_id")
+  source     String?  // map_marker | card | detail | guest_merge
   createdAt  DateTime @default(now()) @map("created_at")
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -315,4 +332,315 @@ model GoogleSyncLog {
 
   @@index([campsiteId])
   @@map("google_sync_logs")
+}
+
+// ===================== Content (admin-managed) =====================
+
+// singleton (id="default") — site-wide SEO / AIO / analytics, editable in admin
+model SiteSettings {
+  id               String   @id @default("default")
+  siteName         String?  @map("site_name")
+  metaTitle        String?  @map("meta_title")
+  metaDescription  String?  @map("meta_description")
+  keywords         String[]
+  ogImage          String?  @map("og_image")
+  ga4Id            String?  @map("ga4_id")
+  gtmId            String?  @map("gtm_id")
+  organizationName String?  @map("organization_name")
+  twitterHandle    String?  @map("twitter_handle")
+  robotsExtra      String?  @map("robots_extra")
+  // ---- AIO (answer-engine / AI optimization) ----
+  aioSummary       String?  @map("aio_summary") // concise site description for AI crawlers / llms.txt
+  aioFaqJson       Json?    @map("aio_faq_json") // [{q,a}] → FAQPage schema.org
+  // ---- GA4 (Data API) ----
+  ga4PropertyId    String?  @map("ga4_property_id") // numeric property id for the Data API (≠ ga4Id "G-XXXX")
+  seoGeneratedAt   DateTime? @map("seo_generated_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("site_settings")
+}
+
+// Editable page text (CMS). One row per page section, value = JSON blob
+// merged over code-side defaults. Keeps admin-editable copy out of the JSX.
+model SiteContent {
+  key       String   @id // e.g. "home", "owners", "footer"
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("site_content")
+}
+
+model HomeBanner {
+  id        String   @id @default(cuid())
+  title     String
+  subtitle  String?
+  imageUrl  String   @map("image_url")
+  ctaLabel  String?  @map("cta_label")
+  ctaHref   String?  @map("cta_href")
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("home_banners")
+}
+
+enum ArticleStatus {
+  draft
+  published
+}
+
+model Article {
+  id              String        @id @default(cuid())
+  slug            String        @unique
+  title           String
+  excerpt         String?
+  content         String?
+  coverImageUrl   String?       @map("cover_image_url")
+  status          ArticleStatus @default(draft)
+  metaTitle       String?       @map("meta_title")
+  metaDescription String?       @map("meta_description")
+  tags            String[]
+  authorId        String?       @map("author_id")
+  publishedAt     DateTime?     @map("published_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  @@index([status, publishedAt])
+  @@map("articles")
+}
+
+// ===================== Phase 2 =====================
+
+enum ProfileStatus {
+  draft
+  pending_review
+  published
+  suspended
+}
+
+enum CampMemberRole {
+  owner
+  staff
+}
+
+enum CampMemberStatus {
+  active
+  invited
+  removed
+}
+
+enum CalendarEventType {
+  open
+  closed
+  fully_booked
+  maintenance
+  private_event
+  special_event
+  holiday_notice
+  weather_notice
+}
+
+enum PlanStatus {
+  interested
+  planning
+  contacted
+  owner_replied
+  confirmed_by_user
+  cancelled
+  visited
+}
+
+enum InquiryStatus {
+  draft
+  sent
+  owner_seen
+  owner_replied
+  user_confirmed
+  cancelled
+  expired
+}
+
+// Camp profile = owner-managed layer over a Campsite (1:1). The campsite row
+// stays the canonical record; this holds owner-editable contact + profile state.
+model CampProfile {
+  id               String        @id @default(cuid())
+  campsiteId       String        @unique @map("campsite_id")
+  ownerUserId      String?       @map("owner_user_id")
+  displayName      String?       @map("display_name")
+  bio              String?
+  contactPhone     String?       @map("contact_phone")
+  contactLine      String?       @map("contact_line")
+  contactFacebook  String?       @map("contact_facebook")
+  contactWebsite   String?       @map("contact_website")
+  profileStatus    ProfileStatus @default(draft) @map("profile_status")
+  completenessScore Int          @default(0) @map("completeness_score")
+  verifiedAt       DateTime?     @map("verified_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  campsite Campsite @relation(fields: [campsiteId], references: [id], onDelete: Cascade)
+
+  @@map("camp_profiles")
+}
+
+model CampOwnerMember {
+  id         String           @id @default(cuid())
+  campsiteId String           @map("campsite_id")
+  userId     String           @map("user_id")
+  role       CampMemberRole   @default(staff)
+  status     CampMemberStatus @default(active)
+  invitedBy  String?          @map("invited_by")
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  campsite Campsite @relation(fields: [campsiteId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([campsiteId, userId])
+  @@index([userId])
+  @@map("camp_owner_members")
+}
+
+model CampCalendarEvent {
+  id             String            @id @default(cuid())
+  campsiteId     String            @map("campsite_id")
+  title          String?
+  eventType      CalendarEventType @map("event_type")
+  startDate      DateTime          @map("start_date") @db.Date
+  endDate        DateTime          @map("end_date") @db.Date
+  note           String?
+  isPublic       Boolean           @default(true) @map("is_public")
+  isHidden       Boolean           @default(false) @map("is_hidden") // admin moderation
+  recurrenceRule String?           @map("recurrence_rule") // ponytail: lite — "weekly:MON" style, not full RRULE
+  createdBy      String?           @map("created_by")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  campsite Campsite @relation(fields: [campsiteId], references: [id], onDelete: Cascade)
+
+  @@index([campsiteId, startDate, endDate])
+  @@map("camp_calendar_events")
+}
+
+model UserProfile {
+  id                   String   @id @default(cuid())
+  userId               String   @unique @map("user_id")
+  displayName          String?  @map("display_name")
+  avatarUrl            String?  @map("avatar_url")
+  bio                  String?
+  homeProvince         String?  @map("home_province")
+  campingStyle         String[] @map("camping_style") // beginner|family|mountain|riverside|pet_friendly
+  phone                String?
+  website              String?
+  socialFacebook       String?  @map("social_facebook")
+  socialInstagram      String?  @map("social_instagram")
+  socialLine           String?  @map("social_line")
+  notificationSettings Json?    @map("notification_settings")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model UserCampingPlan {
+  id                    String     @id @default(cuid())
+  userId                String     @map("user_id")
+  campsiteId            String     @map("campsite_id")
+  startDate             DateTime   @map("start_date") @db.Date
+  endDate               DateTime   @map("end_date") @db.Date
+  status                PlanStatus @default(interested)
+  note                  String?
+  partySize             Int?       @map("party_size")
+  checklistJson         Json?      @map("checklist_json")
+  calendarSyncStatus    String?    @map("calendar_sync_status") // none|exported|google_added
+  externalCalendarEventId String?  @map("external_calendar_event_id")
+  createdAt             DateTime   @default(now()) @map("created_at")
+  updatedAt             DateTime   @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campsite Campsite @relation(fields: [campsiteId], references: [id], onDelete: Cascade)
+  inquiries BookingInquiry[]
+
+  @@index([userId])
+  @@map("user_camping_plans")
+}
+
+model BookingInquiry {
+  id            String        @id @default(cuid())
+  userId        String        @map("user_id")
+  campsiteId    String        @map("campsite_id")
+  campingPlanId String?       @map("camping_plan_id")
+  startDate     DateTime      @map("start_date") @db.Date
+  endDate       DateTime      @map("end_date") @db.Date
+  partySize     Int?          @map("party_size")
+  tentCount     Int?          @map("tent_count")
+  carCount      Int?          @map("car_count")
+  hasPet        Boolean       @default(false) @map("has_pet")
+  contactPhone  String?       @map("contact_phone")
+  message       String?
+  status        InquiryStatus @default(sent)
+  ownerReply    String?       @map("owner_reply")
+  ownerNote     String?       @map("owner_note") // private, never public
+  repliedBy     String?       @map("replied_by")
+  repliedAt     DateTime?     @map("replied_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campsite Campsite         @relation(fields: [campsiteId], references: [id], onDelete: Cascade)
+  plan     UserCampingPlan? @relation(fields: [campingPlanId], references: [id])
+
+  @@index([campsiteId, status])
+  @@index([userId])
+  @@map("booking_inquiries")
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  type       String
+  title      String
+  message    String?
+  targetType String?   @map("target_type")
+  targetId   String?   @map("target_id")
+  readAt     DateTime? @map("read_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model CampProfileActivityLog {
+  id           String   @id @default(cuid())
+  campsiteId   String   @map("campsite_id")
+  actorUserId  String?  @map("actor_user_id")
+  action       String
+  oldValueJson Json?    @map("old_value_json")
+  newValueJson Json?    @map("new_value_json")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  campsite Campsite @relation(fields: [campsiteId], references: [id], onDelete: Cascade)
+
+  @@index([campsiteId])
+  @@map("camp_profile_activity_logs")
+}
+
+// ponytail: guest_favorites table skipped — guests use localStorage, POST the
+// list to /api/me/favorites/merge-guest at signup. Add the table only if guest
+// carts must survive across devices pre-signup.
+model FavoriteMergeLog {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  guestSessionId String?  @map("guest_session_id")
+  mergedCount    Int      @map("merged_count")
+  duplicateCount Int      @map("duplicate_count")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("favorite_merge_logs")
 }

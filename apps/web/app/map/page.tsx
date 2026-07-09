@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import type { CampsiteLight, MapFilters } from "@/lib/types";
-import { filterCampsites, getAmenities } from "@/lib/api";
+import { filterCampsites, getAllCampsites, getAmenities } from "@/lib/api";
 import { MOCK_AMENITIES, MOCK_CAMPSITES } from "@/lib/mock";
 import { FilterPanel } from "@/components/map/filter-panel";
 import { PreviewCard } from "@/components/map/preview-card";
@@ -45,7 +45,9 @@ function MapClient() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [amenities, setAmenities] = useState(MOCK_AMENITIES);
+  const [dataset, setDataset] = useState(MOCK_CAMPSITES as any[]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [deskFilters, setDeskFilters] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(true);
   const [geoMsg, setGeoMsg] = useState<string | null>(null);
 
@@ -64,12 +66,13 @@ function MapClient() {
       amenities: am ? am.split(",") : [],
     });
     getAmenities().then(setAmenities).catch(() => {});
+    getAllCampsites().then(setDataset).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const results = useMemo<CampsiteLight[]>(
-    () => filterCampsites({ ...filters, keyword: keyword || filters.keyword }),
-    [filters, keyword],
+    () => filterCampsites({ ...filters, keyword: keyword || filters.keyword }, dataset),
+    [filters, keyword, dataset],
   );
 
   const selected = results.find((c) => c.id === selectedId) ?? null;
@@ -192,13 +195,21 @@ function MapClient() {
             <p className="text-sm font-semibold text-primary">
               พบ {results.length} ลาน
             </p>
-            <details className="relative">
-              <summary className="cursor-pointer list-none text-xs font-medium text-ember">ตัวกรอง ({activeFilterCount})</summary>
-              <div className="absolute right-0 top-7 z-30 w-80 rounded-xl border bg-card p-4 shadow-lift">
-                <FilterPanel filters={filters} setFilters={setFilters} amenities={amenities} provinces={PROVINCES} onReset={reset} />
-              </div>
-            </details>
+            <button
+              onClick={() => setDeskFilters((v) => !v)}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                deskFilters || activeFilterCount > 0 ? "border-ember text-ember" : "border-border text-muted-foreground hover:border-ember",
+              )}
+            >
+              <SlidersHorizontal className="size-3.5" /> ตัวกรอง{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+            </button>
           </div>
+          {deskFilters && (
+            <div className="max-h-[55vh] overflow-y-auto border-b bg-card/50 p-4">
+              <FilterPanel filters={filters} setFilters={setFilters} amenities={amenities} provinces={PROVINCES} onReset={reset} />
+            </div>
+          )}
           <div className="flex-1 space-y-3 overflow-y-auto p-3">
             {results.length === 0 ? (
               <EmptyState onReset={reset} />

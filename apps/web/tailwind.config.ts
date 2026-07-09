@@ -24,7 +24,7 @@ const config: Config = {
         destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
       },
       fontFamily: {
-        display: ["var(--font-display)", "serif"],
+        display: ["var(--font-display)", "sans-serif"],
         sans: ["var(--font-body)", "sans-serif"],
       },
       borderRadius: {

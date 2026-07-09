@@ -190,14 +190,21 @@ export const adminRoutes = new Elysia({ prefix: "/api/admin" })
       data: { ownerUserId: claim.userId },
     });
     await prisma.user.update({ where: { id: claim.userId }, data: { role: "owner" } });
+    await prisma.notification.create({
+      data: { userId: claim.userId, type: "claim_status", title: "คำขอเป็นเจ้าของลานได้รับการอนุมัติแล้ว", targetType: "campsite", targetId: claim.campsiteId },
+    });
     return claim;
   })
-  .patch("/owner-claims/:id/reject", async ({ params, user }) =>
-    prisma.ownerClaim.update({
+  .patch("/owner-claims/:id/reject", async ({ params, user }) => {
+    const claim = await prisma.ownerClaim.update({
       where: { id: params.id },
       data: { status: "rejected", reviewedBy: user!.id, reviewedAt: new Date() },
-    }),
-  )
+    });
+    await prisma.notification.create({
+      data: { userId: claim.userId, type: "claim_status", title: "คำขอเป็นเจ้าของลานถูกปฏิเสธ", targetType: "campsite", targetId: claim.campsiteId },
+    });
+    return claim;
+  })
   // ---- users ----
   .get("/users", async () =>
     prisma.user.findMany({
