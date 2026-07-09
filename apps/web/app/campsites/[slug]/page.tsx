@@ -104,13 +104,15 @@ export default async function DetailPage({ params }: { params: Promise<{ slug: s
             </div>
           </Section>
 
-          <Section title="ตำแหน่งบนแผนที่">
-            <div className="h-72 overflow-hidden rounded-2xl border"><DetailMap campsite={c as any} /></div>
-            <div className="mt-3 flex gap-2">
-              <Button asChild variant="outline" size="sm"><a href={gmaps} target="_blank" rel="noreferrer"><ExternalLink className="size-4" /> เปิดใน Google Maps</a></Button>
-              <Button asChild variant="ember" size="sm"><a href={directions} target="_blank" rel="noreferrer"><Navigation className="size-4" /> ขอเส้นทาง</a></Button>
-            </div>
-          </Section>
+          {c.latitude != null && c.longitude != null && (
+            <Section title="ตำแหน่งบนแผนที่">
+              <div className="h-72 overflow-hidden rounded-2xl border"><DetailMap campsite={{ ...c, latitude: c.latitude, longitude: c.longitude }} /></div>
+              <div className="mt-3 flex gap-2">
+                <Button asChild variant="outline" size="sm"><a href={gmaps} target="_blank" rel="noreferrer"><ExternalLink className="size-4" /> เปิดใน Google Maps</a></Button>
+                <Button asChild variant="ember" size="sm"><a href={directions} target="_blank" rel="noreferrer"><Navigation className="size-4" /> ขอเส้นทาง</a></Button>
+              </div>
+            </Section>
+          )}
 
           <Section title="รีวิวจาก Google">
             <p className="mb-3 text-xs text-muted-foreground">ข้อมูลรีวิวจาก Google Maps · แสดงตาม attribution ของ Google</p>

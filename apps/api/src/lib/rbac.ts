@@ -44,3 +44,15 @@ export async function requireCampAccess(user: AuthUser, campsiteId: string): Pro
   if (member?.status === "active") return;
   deny(403, "Forbidden");
 }
+
+// campsite ids this user may manage: owned + active staff membership.
+// admin gets `undefined` (no filter = all campsites) — mirrors requireCampAccess's rule.
+export async function accessibleCampIds(user: AuthUser): Promise<string[] | undefined> {
+  requireUser(user);
+  if (user!.role === "admin") return undefined;
+  const [owned, staffed] = await Promise.all([
+    prisma.campsite.findMany({ where: { ownerUserId: user!.id }, select: { id: true } }),
+    prisma.campOwnerMember.findMany({ where: { userId: user!.id, status: "active" }, select: { campsiteId: true } }),
+  ]);
+  return [...new Set([...owned.map((c) => c.id), ...staffed.map((m) => m.campsiteId)])];
+}

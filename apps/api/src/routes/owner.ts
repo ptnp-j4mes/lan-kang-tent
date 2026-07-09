@@ -1,22 +1,23 @@
 import { Elysia, t } from "elysia";
 import { prisma } from "@ckt/db";
 import { authPlugin } from "../lib/auth";
-import { requireRole, requireCampAccess } from "../lib/rbac";
+import { requireRole, requireCampAccess, accessibleCampIds } from "../lib/rbac";
 
 export const ownerRoutes = new Elysia({ prefix: "/api/owner" })
   .use(authPlugin)
   .onBeforeHandle(({ user }) => {
     requireRole(user, "owner", "camp_staff", "admin");
   })
-  .get("/campsites", async ({ user }) =>
-    prisma.campsite.findMany({
-      where: { ownerUserId: user!.id },
+  .get("/campsites", async ({ user }) => {
+    const ids = await accessibleCampIds(user);
+    return prisma.campsite.findMany({
+      where: ids ? { id: { in: ids } } : {},
       include: {
         photos: { orderBy: { sortOrder: "asc" } },
         amenities: { include: { amenity: true } },
       },
-    }),
-  )
+    });
+  })
   .patch(
     "/campsites/:id",
     async ({ user, params, body }) => {

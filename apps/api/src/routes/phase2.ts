@@ -1,7 +1,7 @@
 import { Elysia, t } from "elysia";
 import { prisma } from "@ckt/db";
 import { authPlugin } from "../lib/auth";
-import { requireUser, requireRole, requireCampAccess } from "../lib/rbac";
+import { requireUser, requireRole, requireCampAccess, accessibleCampIds } from "../lib/rbac";
 import { buildIcs, googleCalUrl, checkCalendar, mergeFavorites, completenessScore, type PlanExport } from "../lib/phase2";
 
 const WEB = process.env.WEB_ORIGIN ?? "http://localhost:3000";
@@ -313,9 +313,8 @@ export const ownerPhase2Routes = new Elysia({ prefix: "/api/owner" })
   })
   // camp profile
   .get("/camp-profiles", async ({ user }) => {
-    if (user!.role === "admin") return prisma.campProfile.findMany({ take: 100 });
-    const camps = await prisma.campsite.findMany({ where: { ownerUserId: user!.id }, select: { id: true } });
-    return prisma.campProfile.findMany({ where: { campsiteId: { in: camps.map((c) => c.id) } } });
+    const ids = await accessibleCampIds(user);
+    return prisma.campProfile.findMany({ where: ids ? { campsiteId: { in: ids } } : {} });
   })
   .patch(
     "/camp-profiles/:campId",
@@ -361,7 +360,7 @@ export const ownerPhase2Routes = new Elysia({ prefix: "/api/owner" })
         },
       });
       // notify users who planned across this range that the camp status changed
-      await notifyAffectedPlans(params.campId, ev.startDate, ev.endDate);
+      await notifyAffectedPlans(params.id, ev.startDate, ev.endDate);
       return status(201, ev);
     },
     {
@@ -394,9 +393,7 @@ export const ownerPhase2Routes = new Elysia({ prefix: "/api/owner" })
   })
   // inquiries (owner side)
   .get("/inquiries", async ({ user, query }) => {
-    const camps = user!.role === "admin"
-      ? undefined
-      : (await prisma.campsite.findMany({ where: { ownerUserId: user!.id }, select: { id: true } })).map((c) => c.id);
+    const camps = await accessibleCampIds(user);
     return prisma.bookingInquiry.findMany({
       where: { ...(camps ? { campsiteId: { in: camps } } : {}), ...(query.status ? { status: query.status as any } : {}) },
       include: { campsite: { select: { name: true } }, user: { select: { name: true } } },
